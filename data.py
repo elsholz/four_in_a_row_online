@@ -19,8 +19,8 @@ Rules = namedtuple(
     field_names='''    
     shuffle_turn_order_on_start
     enable_chat
-    quit_game_on_disconnect
-    quit_game_on_win
+    finish_game_on_disconnect
+    finish_game_on_win
     allow_reconnect
     winning_row_length
     field_has_bounds

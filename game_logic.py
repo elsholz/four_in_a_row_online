@@ -2,7 +2,7 @@ import random
 from locales import *
 from data import Rules, CardDeck, PlayField, Player, TokenStyle, Field
 
-GameState = enum.Enum('GameState', 'lobby started finished')
+GameState = enum.Enum('GameState', 'lobby started finished quit')
 
 
 class Game:
@@ -86,14 +86,13 @@ class Game:
         self.initial_players = self.participants[:]
 
     def player_join(self, p):
-        part = self.participants if not self._game_state == GameState.started else self.initial_players
-
         if self._game_state == GameState.started:
             if not self.rules.allow_reconnect:
                 raise Game.InvalidPlayer()
             else:
-                # TODO: allow reconnects
-                pass
+                if p not in self.participants:
+                    if not any(p.name == x.name for x in self.initial_players):
+                        self.participants.append(p)
         else:
             if any([
                 not TokenStyle.distinguishable(x.token_style, p.token_style)
@@ -104,12 +103,29 @@ class Game:
             if not len(self.participants) < self.rules.number_of_players:
                 raise Game.LobbyFull(len(self.participants))
 
-
-
         self.participants.append(p)
 
     def player_leave(self, p):
-        # self.participants.remove(p)
-        self.participants = [x for x in self.participants if not x.name == p.name]
-        if self.rules.quit_game_on_disconnect:
-            self._game_state = GameState.lobby
+        # NOTE: Backend will only make one copy per player for certain (except for reconnects)
+        if p in self.participants:
+            print('before:', self.participants)
+            self.participants.remove(p)
+            print('after:', self.participants)
+        else:
+            raise Game.InvalidPlayer
+
+        if len(self.participants) == 0:
+            self.quit_game()
+
+        elif p == self.host:
+            self.host = self.participants[0]
+
+        if self.rules.finish_game_on_disconnect:
+            self.finish_game()
+            # self._game_state = GameState.lobby
+
+    def finish_game(self):
+        pass
+
+    def quit_game(self):
+        pass

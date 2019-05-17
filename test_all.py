@@ -8,8 +8,8 @@ p2 = Player(name='PlayerB', token_style=TokenStyle(color=(255, 0, 0, 255), img_s
 r = Rules(
     shuffle_turn_order_on_start=True,
     enable_chat=True,
-    quit_game_on_disconnect=False,
-    quit_game_on_win=True,
+    finish_game_on_disconnect=False,
+    finish_game_on_win=True,
     allow_reconnect=False,
     winning_row_length=4,
     field_has_bounds=True,
@@ -25,8 +25,8 @@ r = Rules(
 r2 = Rules(
     shuffle_turn_order_on_start=True,
     enable_chat=True,
-    quit_game_on_disconnect=False,
-    quit_game_on_win=True,
+    finish_game_on_disconnect=False,
+    finish_game_on_win=True,
     allow_reconnect=True,
     winning_row_length=4,
     field_has_bounds=True,
@@ -86,9 +86,11 @@ class TestGameLogic:
                     name='Another player', token_style=TokenStyle(
                         color=(255, 150, 0, 255), img_src='img source')
                 ))
-
+            print(len(g.participants))
             g.player_leave(p)
+            print(len(g.participants))
             g.player_join(p)
+            print(len(g.participants))
             p.is_ready = True
             p2.is_ready = True
             g.start_game()
@@ -100,6 +102,7 @@ class TestGameLogic:
 
             g.rules = r2
             g.player_join(p)
+            assert len(g.participants) == 2
 
         def test_indistinguishable_player_join(self):
             pass
@@ -108,6 +111,17 @@ class TestGameLogic:
             #    g.join(Player(
             #        name='Another player', token_style=TokenStyle(color=(255, 0, 0, 255), img_src='img source')
             #    ))
+
+    class TestPlayerLeave:
+        def test_non_existing_player_leave(self):
+            with pytest.raises(Game.InvalidPlayer):
+                g.player_leave(Player(
+                    name='PlayerC', token_style=TokenStyle(color=(255, 0, 0, 255), img_src='img source')
+                ))
+
+            g.player_leave(p)
+            assert g.host == p2
+            assert len(g.participants) == 1
 
 
 class TestBackend:
