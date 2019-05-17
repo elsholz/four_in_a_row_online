@@ -30,7 +30,7 @@ def test_game_creation():
 
     p = game_logic.Player(name='player host', token_style=game_logic.TokenStyle(color=(255, 0, 0, 255), img_src=None))
 
-    game = game_logic.Game(name='test game 1', participants=[p], rules=r, card_deck=None)
+    game = game_logic.Game(name='test game 1', host=p, rules=r, card_deck=None)
     # print(game)
     game.render_play_field()
     p2 = game_logic.Player(name='player 2', token_style=game_logic.TokenStyle(color=(0, 255, 0, 255), img_src=None))

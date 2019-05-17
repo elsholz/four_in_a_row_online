@@ -2,8 +2,6 @@ import random
 from locales import *
 from data import Rules, CardDeck, PlayField, Player, TokenStyle, Field
 
-
-
 GameState = enum.Enum('GameState', 'lobby started finished')
 
 
@@ -11,15 +9,22 @@ class Game:
     class GameCannotBeStarted(Exception):
         pass
 
+    class InvalidPlayer(Exception):
+        pass
+
     class IllegalAction(Exception):
         pass
 
-    def __init__(self, name, participants, rules, card_deck):
+    class LobbyFull(Exception):
+        pass
+
+    def __init__(self, name, host, rules, card_deck):
         self.name = name
         self.rules = rules
-        self.participants = participants
+        self.host = host
+        self.participants = [host]
         self._play_field = PlayField(dimensions=(self.rules.play_field_width, self.rules.play_field_height))
-        self._game_state = GameState
+        self._game_state = GameState.lobby
         self._current_turn = None
         self.card_deck = card_deck
 
@@ -45,8 +50,9 @@ class Game:
         self._current_turn = 0
         if self.rules.shuffle_turn_order_on_start:
             random.shuffle(self.participants)
+        self.initial_players = self.participants[:]
 
-        print(f'Started Game {self.name} with {len(self.participants)} players ({self.participants})')
+        # print(f'Started Game {self.name} with {len(self.participants)} players ({self.participants})')
 
     def place_token(self, player, loc_x, loc_y):
         # print(self._play_field.can_place_token(self.rules, player, loc_x, loc_y))
@@ -73,15 +79,37 @@ class Game:
                 print(p.fields[yi][xi].location, end=' ')
             print()
 
+    @DeprecationWarning
     def _start(self):
         if self.rules.shuffle_turn_order_on_start:
             random.shuffle(self.participants)
+        self.initial_players = self.participants[:]
 
     def player_join(self, p):
-        if self._game_state == GameState.lobby and len(self.participants) < self.rules.number_of_players:
-            self.participants.append(p)
+        part = self.participants if not self._game_state == GameState.started else self.initial_players
+
+        if self._game_state == GameState.started:
+            if not self.rules.allow_reconnect:
+                raise Game.InvalidPlayer()
+            else:
+                # TODO: allow reconnects
+                pass
+        else:
+            if any([
+                not TokenStyle.distinguishable(x.token_style, p.token_style)
+                for x in self.participants
+            ]) or any([p.name == x.name for x in self.participants]):
+                raise Game.InvalidPlayer()
+
+            if not len(self.participants) < self.rules.number_of_players:
+                raise Game.LobbyFull(len(self.participants))
+
+
+
+        self.participants.append(p)
 
     def player_leave(self, p):
-        self.participants.remove(p)
+        # self.participants.remove(p)
+        self.participants = [x for x in self.participants if not x.name == p.name]
         if self.rules.quit_game_on_disconnect:
             self._game_state = GameState.lobby

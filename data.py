@@ -1,5 +1,8 @@
 from collections import namedtuple
 from dataclasses import dataclass
+import webcolors
+
+webcolors.CSS3_HEX_TO_NAMES
 
 CardDeck = namedtuple(
     typename='CardDeck',
@@ -32,6 +35,7 @@ Rules = namedtuple(
     '''
 )
 
+
 @dataclass
 class TokenStyle:
     color: (int, int, int, int)
@@ -40,6 +44,11 @@ class TokenStyle:
     def __init__(self, color, img_src):
         self.color = color
         self.img_src = img_src
+
+    @staticmethod
+    def distinguishable(a, b):
+        # returns True, if the token styles are distinguishable
+        return True
 
 
 @dataclass
@@ -52,6 +61,7 @@ class Player:
         self.name = name
         self.token_style = token_style
         self.is_ready = False
+
 
 @dataclass
 class PlayField:

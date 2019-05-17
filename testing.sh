@@ -1,0 +1,1 @@
+pytest test_all.py --capture=sys -s --duration=10
