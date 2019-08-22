@@ -1,39 +1,101 @@
 languages:
-  english: &english
-    English
-  german: &german
-    German
+  english:
+    'English'
+  german:
+    'German'
 
 exceptions:
-    notAllPlayersReady:
-        english:
-          'Not all Players are ready'
-        german:
+  NotAllPlayersReady:
+    english:
+      'Not all Players are ready'
+    german:
+      'Nicht alle Spieler sind Breit!'
+  NotEnoughPlayers:
+    english:
+      'Not enough players yet!'
+    german:
+      'Nicht genügend Spieler, Sportsfreund!'
 
+rules:
+  shuffle_turn_order_on_start:
+    english:
+      'shuffle turn order on start'
+    german:
+      'Reihenfolge zu Spielstart vermischen'
+  enable_chat:
+    english:
+      'Enable Chat'
+    german:
+      'Chat Aktivieren'
+  allow_reconnect:
+    english:
+      'Allow Reconnect'
+    german:
+      'Wiederbetreten erlauben'
+  winning_row_length:
+    english:
+      'Winning Row Length'
+    german:
+      'Reihenlänge zum Sieg'
+  field_has_bounds:
+    english:
+      'Field has Bounds'
+    german:
+      'Spielfeld begrenzt'
+  enable_cards:
+    english:
+      'Enable Cards'
+    german:
+      'Spielkarten erlauben'
+  enable_cheats:
+    english:
+      'Enable Cheats'
+    german:
+      'Betrug dulden'
+  number_of_players:
+    english:
+      'Number of Players'
+    german:
+      'Anzahl der Spieler'
+  start_game_if_all_ready:
+    english:
+      'Wait for all'
+    german:
+      'Start sobald alle bereit sind'
+  play_field_width:
+    english:
+      'Play Field Width'
+    german:
+      'Spielfeld-Breite'
+  play_field_height:
+    english:
+      'Play Field Height'
+    german:
+      'Spielfeld-Höhe'
+  enable_gravity:
+    english:
+      'Enable Gravity'
+    german:
+      'auf dem Teppich bleiben'
 
-'''ocales = {
-    'exceptions': [
-        {
-            'Not all players are ready': {
-                Languages.german: 'Nicht alle Spieler sind breit!'
-            }
-        },
-        {
-            'Not enough players': {
-                Languages.german: 'Nicht genügend Spieler!'
-            }
-        },
-    ],
-    'rules': [
-        {
-            'Shuffle turn order on start': {
-                Languages.german: 'Spielreihenfolge mischen'
-            }
-        },
-        {
-            'Enable Chat': {
-                Languages.german: 'Klatsch und Tratsch erlauben'
-            }
-        },
-    ]
-}'''
+card_deck:
+  card_shuffle_turn_order:
+    english:
+      'Shuffle Turn Order'
+    german:
+      'Mission Possible'
+  card_reverse_turn_order:
+    english:
+      'Reverse Turn Order'
+    german:
+      'Schubumkehrung'
+  card_skip_next_turn:
+    english:
+      'Skip Next Turn'
+    german:
+      'Nächsten Spieler überspringen'
+  card_placing_cooldown:
+    english:
+      'Card Placing Cooldown'
+    german:
+      'Kartenplatzierungsintervall'
