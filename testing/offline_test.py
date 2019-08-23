@@ -1,6 +1,7 @@
 import pytest
-import game_logic
+# import game_logic
 
+from .. import game_logic.game_logic
 
 def test_game_creation():
     cd = game_logic.CardDeck(

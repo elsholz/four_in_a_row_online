@@ -1,1 +1,1 @@
-pytest test_all.py --capture=sys -s --duration=10
+pytest offline_test.py --capture=sys -s --duration=10
