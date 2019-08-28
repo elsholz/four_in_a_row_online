@@ -1,8 +1,8 @@
 import random
-from locales import *
-from data import Rules, CardDeck, PlayField, Player, TokenStyle, Field
+from enum import Enum
+from four_in_a_row_online.game_logic.data import Rules, CardDeck, PlayField, Player, TokenStyle, Field
 
-GameState = enum.Enum('GameState', 'lobby started finished quit')
+GameState = Enum('GameState', 'lobby started finished quit')
 
 
 class Game:
@@ -56,7 +56,7 @@ class Game:
 
     def place_token(self, player, loc_x, loc_y):
         # print(self._play_field.can_place_token(self.rules, player, loc_x, loc_y))
-        if (self._game_state == GameState.started and player == self.participants[self._current_turn]):
+        if self._game_state == GameState.started and player == self.participants[self._current_turn]:
             try:
                 self._play_field.place_token(self.rules, player, loc_x, loc_y)
             except PlayField.IllegalTokenLocation:
@@ -78,12 +78,6 @@ class Game:
             for xi in range(x):
                 print(p.fields[yi][xi].location, end=' ')
             print()
-
-    @DeprecationWarning
-    def _start(self):
-        if self.rules.shuffle_turn_order_on_start:
-            random.shuffle(self.participants)
-        self.initial_players = self.participants[:]
 
     def player_join(self, p):
         if self._game_state == GameState.started:

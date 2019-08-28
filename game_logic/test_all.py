@@ -1,6 +1,6 @@
 import pytest
-from data import *
-from game_logic import *
+from four_in_a_row.game_logic.data import *
+from four_in_a_row.game_logic.game_logic import *
 
 n = 'This is the game name'
 p = Player(name='PlayerA', token_style=TokenStyle(color=(255, 0, 0, 255), img_src='img source'))
