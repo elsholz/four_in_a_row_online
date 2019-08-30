@@ -3,7 +3,7 @@ from four_in_a_row_online.game_logic.data import *
 from loguru import logger
 
 
-class TestGameLogic(TestCase):
+class TestData(TestCase):
     def test_token_style(self):
         # approve default behavior
         self.assertGreater(TokenStyle.default_init().color[3], 0)
@@ -41,21 +41,37 @@ class TestGameLogic(TestCase):
 
     def test_rules(self):
         self.assertEqual(len(Rules.default_init().__dict__), len(RulesData.data_fields))
-        rules = [Rules.random_init() for _ in range(8)]
+        self.assertEqual(len(RulesData.defaults), len(RulesData.randomization))
+        rules = [Rules.random_init() for _ in range(16)]
 
         for r in rules:
             self.assertNotEqual(r, Rules.unique_random([r]))
             self.assertNotEqual(r, Rules.unique_random(rules))
             self.assertEqual(r, r)
-            
+
     def test_card_deck(self):
         self.assertEqual(len(CardDeck.default_init().__dict__), len(CardDeckData.data_fields))
-        card_decks = [CardDeck.random_init() for _ in range(8)]
+        self.assertEqual(len(CardDeckData.defaults), len(CardDeckData.randomization))
+        card_decks = [CardDeck.random_init() for _ in range(16)]
 
         for cd in card_decks:
             self.assertNotEqual(cd, CardDeck.unique_random([cd]))
             self.assertNotEqual(cd, CardDeck.unique_random(card_decks))
             self.assertEqual(cd, cd)
+
+    def test_player(self):
+        self.assertEqual(len(Player.default_init().__dict__), len(PlayerData.data_fields))
+        self.assertEqual(len(PlayerData.defaults), len(PlayerData.randomization))
+        players = [Player.random_init() for _ in range(16)]
+
+        for p in players:
+            self.assertNotEqual(p, Player.unique_random([p]))
+            self.assertNotEqual(p, Player.unique_random(players))
+            self.assertEqual(p, p)
+
+    def test_play_field(self):
+        pass
+
 
 
 if __name__ == '__main__':

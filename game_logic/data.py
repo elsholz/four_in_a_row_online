@@ -178,7 +178,7 @@ class PlayerData():
 
     randomization = dict(zip(
         data_fields,
-        ['player no ' + str(random.randrange(100, 999))] + [TokenStyle.random_init] + [
+        [lambda : ('player no ' + str(random.randrange(100, 999)))] + [TokenStyle.random_init] + [
             lambda: bool(random.getrandbits(1))]
     ))
 
@@ -194,10 +194,11 @@ class Player(PlayerData, DataContainer):
     # defaults = PlayerData.defaults
     # randomization = PlayerData.randomization
 
-    def __init__(self, name, token_style):
+    def __init__(self, name, token_style, is_ready=False):
         self.name = name
         self.token_style = token_style
         self.is_ready = False
+    
 
 
 @dataclass

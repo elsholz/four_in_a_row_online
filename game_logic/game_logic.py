@@ -27,14 +27,17 @@ class Game:
         self._game_state = GameState.lobby
         self._current_turn = None
         self.card_deck = card_deck
+        self.initial_players = None
 
     def __repr__(self):
         return str(self)
 
     def __str__(self):
-        nl = '\n'
-        return f'Game(\n\tname={self.name}\n\trules={self.rules},\n\tparticipants=[\n{f"{nl}".join([f"        name={p.name}, token_style={p.token_style}, is_ready={p.is_ready}" for p in self.participants])}\n    ],\n\t_play_field={self._play_field},' \
-               f'\n\tgame_sate={self._game_state},\n\t_current_turn={self._current_turn}\n)'
+        # nl = '\n'
+        # return f'Game(\n\tname={self.name}\n\trules={self.rules},\n\tparticipants=[\n{f"{nl}".join(' + f'[f"        name={p.name}, token_style={p.token_style}, is_ready={p.is_ready}" for p in self.participants])}\n    ],\n\t_play_field={self._play_field},' \
+        #        f'\n\tgame_sate={self._game_state},\n\t_current_turn={self._current_turn}\n)'
+
+        return f'Game(\n' + ',\n\t'.join([f'{x}={str(x)}' for x in self.__dict__]) + '\n)'
 
     def start_game(self):
         if self.rules.start_game_if_all_ready and all([p.is_ready for p in self.participants]):
