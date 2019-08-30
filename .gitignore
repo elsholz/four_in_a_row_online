@@ -20,7 +20,6 @@ yarn-error.log*
 *.sln
 *.sw?
 __cache__/
-testing/
 venv/
 fiaro_venv/__pycache__/
 __pycache__/

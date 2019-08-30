@@ -5,9 +5,15 @@ import random
 
 
 class DataContainer:
+    """Super class for all objects that can be initialized randomly or have a default. Basically just a tool to make
+    testing a bit easier, since objects can be randomly generated."""
     data_fields = None
     defaults = None
     randomization = None
+    constraints = None
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
 
     @classmethod
     def random_init(cls):
@@ -24,8 +30,11 @@ class DataContainer:
             # check that no object is equal to the random object
             if all([not x == random_object for x in existing]):
                 return random_object
+    
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
 
-
+@dataclass
 class CardDeckData:
     data_fields = [x.strip() for x in '''card_shuffle_turn_order
                 card_reverse_turn_order
@@ -42,15 +51,16 @@ class CardDeckData:
         [lambda: bool(random.getrandbits(1))] * 3 + [lambda: random.randrange(0, 10)]
     ))
 
+    constraints = None
 
-class CardDeck(
-    CardDeckData, namedtuple(
-        'CardDeck',
-        field_names=CardDeckData.data_fields,
-        defaults=CardDeckData.defaults.items()
-    ), DataContainer
-):
-    pass
+
+@dataclass()
+class CardDeck(CardDeckData, DataContainer):
+    def __init__(self, **kwargs):
+        DataContainer.__init__(self, **kwargs)
+        
+    def __eq__(self, other):
+        return DataContainer.__eq__(self, other) 
 
 
 @dataclass
@@ -84,17 +94,13 @@ class RulesData:
     ))
 
 
-class Rules(
-    RulesData,
-    namedtuple(
-        'Rules',
-        field_names=RulesData.data_fields,
-        defaults=RulesData.defaults.items()
-    ),
-    DataContainer
-):
-    pass
-
+@dataclass
+class Rules(RulesData, DataContainer):
+    def __init__(self, **kwargs):
+        DataContainer.__init__(self, **kwargs)
+       
+    def __eq__(self, other):
+        return DataContainer.__eq__(self, other) 
 
 @dataclass
 class TokenStyleData:
@@ -108,34 +114,56 @@ class TokenStyleData:
 
     randomization = dict(zip(
         data_fields,
-        [lambda: tuple(random.randrange(0, 255) for _ in range(4))] + [lambda: None]
+        [lambda: tuple(random.randrange(0, 255) for _ in range(3)) + (random.randrange(125, 255),)] + [lambda: None]
     ))
 
 
 @dataclass
 class TokenStyle(TokenStyleData, DataContainer):
+    """Represent the visual apperance of a player's play token. The TokenStyle will only contain a color, represented
+    as a tuple of RGBα values. To assure visibility, the α value must be at least 124. To allow a player to use their
+    chosen TokenStyle, the color has to be distinguishable from all the other player's token's colors."""
+
+    class TooTransparent(ValueError):
+        """The color's alpha value is too low."""
+
+    class OutOfRange(ValueError):
+        """The color's values are not within the allowed range."""
+
     color: (int, int, int, int)
     img_src: str
 
-    def __init__(self, color, img_src):
+    def __init__(self, color, img_src=None):
         self.color = color
         self.img_src = img_src
         if len(color) > 3:
             # assert some visibility
-            assert color[-1] > 124
+            if not color[-1] > 124:
+                raise TokenStyle.TooTransparent()
+        for value in color:
+            if not 0 <= value <= 255:
+                raise TokenStyle.OutOfRange()
 
     @staticmethod
     def distinguishable(a, b):
+        """Determines whether two TokenStyles are distinguishable by the human eye. Based on simple math."""
         # returns True, if the token styles are distinguishable
         # take into account alpha values. Maybe
         return sum([abs(col_a - col_b) for col_a, col_b in zip(a.color, b.color)]) > (4 * 30)
 
     @classmethod
-    def distinguishable_init(cls, existing):
+    def istinguishable_init(cls, existing):
+        """Instantiates the class TokenStyle randomly until an instance is distinguishable from a list of other
+        TokenStyles in which case that instance is then returned."""
         while True:
             token_style = cls.random_init()
             if all([TokenStyle.distinguishable(token_style, x) for x in existing]):
                 return token_style
+
+    def __eq__(self, other):
+        """Override the euqality operator to improve readability. Checks for excact matches shall always make use of
+        the `is` operator."""
+        return not TokenStyle.distinguishable(self, other)
 
 
 class PlayerData():
@@ -150,13 +178,14 @@ class PlayerData():
 
     randomization = dict(zip(
         data_fields,
-        ['player no ' + str(random.randrange(100, 999))] + [TokenStyle.random_init()] + [
+        ['player no ' + str(random.randrange(100, 999))] + [TokenStyle.random_init] + [
             lambda: bool(random.getrandbits(1))]
     ))
 
 
 @dataclass
 class Player(PlayerData, DataContainer):
+    """Data class to represent a player."""
     name: str
     token_style: TokenStyle
     is_ready: bool
@@ -173,7 +202,10 @@ class Player(PlayerData, DataContainer):
 
 @dataclass
 class PlayField:
-    class IllegalTokenLocation(Exception):
+    """Data class to represent a play field of variable size."""
+
+    class IllegalTokenLocation(ValueError):
+        """Exception to signify that the token can't be placed at the selected location."""
         pass
 
     dimensions: (int, int)
@@ -185,6 +217,7 @@ class PlayField:
         self.fields = [[Field((x, y)) for x in range(x)] for y in range(y)]
 
     def _check_for_winning_rows(self, rules, player):
+        """Check, if there are any rows on the field long enough for the specified player to win the game."""
         applicable_fields = [f for row in self.fields for f in row if f.occupation == player]
         start_points = set()
         for field in applicable_fields:
@@ -230,6 +263,8 @@ class PlayField:
 
 @dataclass
 class Field:
+    """Data class to represent a single field on a play field. The field can be occupied or empty. 
+    The absolute location of the field in the play field is also saved."""
     occupation: Player
     location: (int, int)
 
