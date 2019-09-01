@@ -1,5 +1,6 @@
 from unittest import TestCase, main
 from four_in_a_row_online.game_logic.data import *
+from four_in_a_row_online.game_logic.game_logic import *
 
 
 class TestData(TestCase):
@@ -78,54 +79,52 @@ class TestData(TestCase):
 
 
 class TestGameLogic(TestCase):
-    pass
-    # legacy code from offline_testing.py
-    # def test_basic_game_creation(self):
-    #     card_deck = game_logic.CardDeck(
-    #         card_shuffle_turn_order=True,
-    #         card_reverse_turn_order=True,
-    #         card_skip_next_turn=True,
-    #         card_placing_cooldown=True,
-    #     )
-    #
-    #     rules = game_logic.Rules(
-    #         shuffle_turn_order_on_start=True,
-    #         enable_chat=True,
-    #         finish_game_on_disconnect=True,
-    #         finish_game_on_win=True,
-    #         allow_reconnect=True,
-    #         winning_row_length=True,
-    #         field_has_bounds=True,
-    #         enable_cards=True,
-    #         enable_cheats=True,
-    #         number_of_players=3,
-    #         start_game_if_all_ready=True,
-    #
-    #         play_field_width=3,
-    #         play_field_height=2,
-    #         enable_gravity=True,
-    #     )
-    #
-    #     player_host = game_logic.Player(name='im the host',
-    #                                     token_style=game_logic.TokenStyle(color=(253, 3, 5), img_src=None))
-    #     game = game_logic.Game(name='test game 1', host=player_host, rules=rules, card_deck=card_deck)
-    #
-    #     for a, b in zip([card_deck, rules, player_host, [player_host], 'test game 1'],
-    #                     [game.card_deck, game.rules, game.host, game.participants, game.name]):
-    #         self.assertEqual(a, b)
-    #         logger.debug('\n' + str(a) + '\n' + str(b))
-    #
-    #     with self.assertRaises(game_logic.Game.GameCannotBeStarted):
-    #         game.start_game()
-    #
-    #     with self.assertRaises(game_logic.Game.InvalidPlayer):
-    #         game.player_join(p=player_host)
-    #
-    #     with self.assertRaises(game_logic.Game.InvalidPlayer):
-    #         game.player_join(p=game_logic.Player(name=player_host.name, token_style=game_logic.TokenStyle.random()))
-    #
-    #     with self.assertRaises(game_logic.Game.LobbyFull):
-    #         game.player_join()
+    def test_basic_game_creation(self):
+        card_deck = CardDeck(
+            card_shuffle_turn_order=True,
+            card_reverse_turn_order=True,
+            card_skip_next_turn=True,
+            card_placing_cooldown=True,
+        )
+
+        rules = Rules.default_init()
+        rules.__dict__.update({
+            "shuffle_turn_order_on_start": True,
+            "enable_chat": True,
+            "finish_game_on_disconnect": True,
+            "finish_game_on_win": True,
+            "allow_reconnect": True,
+            "winning_row_length": True,
+            "field_has_bounds": True,
+            "enable_cards": True,
+            "enable_cheats": True,
+            "number_of_players": 3,
+            "start_game_if_all_ready": True,
+
+            "play_field_width": 3,
+            "play_field_height": 2,
+            "enable_gravity": True
+        })
+
+        player_host = Player(name='im the host',
+                             token_style=TokenStyle(color=(253, 3, 5), img_src=None))
+        game = Game(name='test game 1', host=player_host, rules=rules, card_deck=card_deck)
+
+        for a, b in zip([card_deck, rules, player_host, [player_host], 'test game 1'],
+                        [game.card_deck, game.rules, game.host, game.participants, game.name]):
+            self.assertEqual(a, b)
+
+        with self.assertRaises(Game.CannotBeStarted):
+            game.start_game()
+
+        with self.assertRaises(Game.InvalidPlayer):
+            game.player_join(p=player_host)
+
+        with self.assertRaises(Game.InvalidPlayer):
+            game.player_join(p=Player(name=player_host.name, token_style=TokenStyle.random_init()))
+
+        # with self.assertRaises(Game.LobbyFull):
+        #    game.player_join(Player.unique_random(game.participants))
 
 
 if __name__ == '__main__':
