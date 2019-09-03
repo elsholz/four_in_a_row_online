@@ -10,7 +10,6 @@ class DataContainer:
     data_fields = None
     defaults = None
     randomization = None
-    constraints = None
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -30,9 +29,10 @@ class DataContainer:
             # check that no object is equal to the random object
             if all([not x == random_object for x in existing]):
                 return random_object
-    
+
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
+
 
 @dataclass
 class CardDeckData:
@@ -51,16 +51,25 @@ class CardDeckData:
         [lambda: bool(random.getrandbits(1))] * 3 + [lambda: random.randrange(0, 10)]
     ))
 
-    constraints = None
-
 
 @dataclass()
 class CardDeck(CardDeckData, DataContainer):
     def __init__(self, **kwargs):
         DataContainer.__init__(self, **kwargs)
-        
+
     def __eq__(self, other):
-        return DataContainer.__eq__(self, other) 
+        return DataContainer.__eq__(self, other)
+
+    def random_init(*args, **kwargs):
+        # obj = Rules(**dict([(field, RulesData.randomization[field]()) for field in RulesData.$
+        obj = Rules(**dict((field.__name__, field.random_init()) for field in Rules.rules))
+
+        if not obj.start_game_if_all_ready:
+            obj.variable_player_count = False
+
+        if obj.variable_player_count:
+            obj.number_of_players = None
+        return obj
 
 
 @dataclass
@@ -98,9 +107,10 @@ class RulesData:
 class Rules(RulesData, DataContainer):
     def __init__(self, **kwargs):
         DataContainer.__init__(self, **kwargs)
-       
+
     def __eq__(self, other):
-        return DataContainer.__eq__(self, other) 
+        return DataContainer.__eq__(self, other)
+
 
 @dataclass
 class TokenStyleData:
@@ -178,7 +188,7 @@ class PlayerData():
 
     randomization = dict(zip(
         data_fields,
-        [lambda : ('player no ' + str(random.randrange(100, 999)))] + [TokenStyle.random_init] + [
+        [lambda: ('player no ' + str(random.randrange(100, 999)))] + [TokenStyle.random_init] + [
             lambda: bool(random.getrandbits(1))]
     ))
 
@@ -198,7 +208,6 @@ class Player(PlayerData, DataContainer):
         self.name = name
         self.token_style = token_style
         self.is_ready = False
-    
 
 
 @dataclass
