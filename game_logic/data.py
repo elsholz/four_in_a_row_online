@@ -60,17 +60,6 @@ class CardDeck(CardDeckData, DataContainer):
     def __eq__(self, other):
         return DataContainer.__eq__(self, other)
 
-    def random_init(*args, **kwargs):
-        # obj = Rules(**dict([(field, RulesData.randomization[field]()) for field in RulesData.$
-        obj = Rules(**dict((field.__name__, field.random_init()) for field in Rules.rules))
-
-        if not obj.start_game_if_all_ready:
-            obj.variable_player_count = False
-
-        if obj.variable_player_count:
-            obj.number_of_players = None
-        return obj
-
 
 @dataclass
 class RulesData:
@@ -110,6 +99,17 @@ class Rules(RulesData, DataContainer):
 
     def __eq__(self, other):
         return DataContainer.__eq__(self, other)
+
+    def random_init(*args, **kwargs):
+        # obj = Rules(**dict([(field, RulesData.randomization[field]()) for field in RulesData.$
+        obj = Rules(**dict((field.__name__, field.random_init()) for field in Rules.rules))
+
+        if not obj.start_game_if_all_ready:
+            obj.variable_player_count = False
+
+        if obj.variable_player_count:
+            obj.number_of_players = None
+        return obj
 
 
 @dataclass
