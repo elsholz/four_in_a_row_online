@@ -74,20 +74,21 @@ class RulesData:
         enable_cheats
         number_of_players
         start_game_if_all_ready
+        variable_player_count
         play_field_width
         play_field_height
         enable_gravity'''.splitlines()]
 
     defaults = dict(zip(
         data_fields,
-        [True, True, True, True, False, 4, True, False, False, 2, True, 8, 6, True]
+        [True, True, True, True, False, 4, True, False, False, 2, True, False, 8, 6, True]
     ))
 
     randomization = dict(zip(
         data_fields,
         [lambda: bool(random.getrandbits(1)) for _ in range(5)] + [lambda: random.randrange(2, 16)] +
         [lambda: bool(random.getrandbits(1)) for _ in range(3)] + [lambda: random.randrange(2, 10)] +
-        [lambda: bool(random.getrandbits(1))] + [lambda: random.randrange(2, 10)] * 2 +
+        [lambda: bool(random.getrandbits(1))] * 2 + [lambda: random.randrange(2, 10)] * 2 +
         [lambda: bool(random.getrandbits(1))]
     ))
 
@@ -101,8 +102,7 @@ class Rules(RulesData, DataContainer):
         return DataContainer.__eq__(self, other)
 
     def random_init(*args, **kwargs):
-        # obj = Rules(**dict([(field, RulesData.randomization[field]()) for field in RulesData.$
-        obj = Rules(**dict((field.__name__, field.random_init()) for field in Rules.rules))
+        obj = Rules(**dict([(field, RulesData.randomization[field]()) for field in RulesData.data_fields]))
 
         if not obj.start_game_if_all_ready:
             obj.variable_player_count = False
