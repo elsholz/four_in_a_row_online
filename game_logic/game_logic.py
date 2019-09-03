@@ -34,7 +34,7 @@ class Game:
         self.host = host
         self.participants = [host]
         self._play_field = PlayField(dimensions=(self.rules.play_field_width, self.rules.play_field_height))
-        self._game_state = GameState.lobby
+        self._game_state = Game.State.lobby
         self._current_turn = None
         self.card_deck = card_deck
         self.initial_players = None
@@ -105,14 +105,12 @@ class Game:
             self._game_state = Game.State.started
             self._current_turn = 0
 
-            #if self.rules.shuffle_turn_order_on_start:
+            # if self.rules.shuffle_turn_order_on_start:
             #    random.shuffle(self.participants)
             # replaced by:
             self.rules.apply(game=self)
 
-
             self.initial_players = self.participants[:]
-
 
     def place_token(self, player, loc_x, loc_y):
         # print(self._play_field.can_place_token(self.rules, player, loc_x, loc_y))
