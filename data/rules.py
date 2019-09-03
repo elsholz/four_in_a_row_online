@@ -5,15 +5,49 @@ be applied to a game object.
 """
 
 from random import shuffle, getrandbits
+import random
 
 
 class Rule:
     """Class to represent a single rule."""
 
     # TODO: how to interact with other rules? What about conflicts, I mean?
-    # Edit: Make do constraint checking in the collection class (e.g. Rules)
-    defaults = {}
-    randomization = {}
+    # Edit: Do constraint checking in the collection class (e.g. Rules)
+    # → In `data.py`
+    data_fields = [x.strip() for x in '''shuffle_turn_order_on_start
+            enable_chat
+            finish_game_on_disconnect
+            finish_game_on_win
+            allow_reconnect
+            winning_row_length
+            field_has_bounds
+            enable_cards
+            enable_cheats
+            number_of_players
+            start_game_if_all_ready
+            variable_player_count
+            play_field_width
+            play_field_height
+            enable_gravity'''.splitlines()]
+
+    defaults = dict(zip(
+        data_fields,
+        [{'value': v} for v in [True, True, True, True, False, 4, True, False, False, 2, True, False, 8, 6, True]]
+
+    ))
+
+    randomization = dict(
+        zip(
+            data_fields,
+
+            [lambda: {'value': bool(random.getrandbits(1))} for _ in range(5)] +
+            [lambda: {'value': random.randrange(2, 16)}] +
+            [lambda: {'value': bool(random.getrandbits(1))} for _ in range(3)] +
+            [lambda: {'value': random.randrange(2, 10)}] +
+            [lambda: {'value': bool(random.getrandbits(1))}] * 2 + [lambda: random.randrange(2, 10)] * 2 +
+            [lambda: {'value': bool(random.getrandbits(1))}]
+        )
+    )
 
     def __init__(self, *args, **kwargs):
         self.__dict__.update(kwargs)
@@ -36,11 +70,11 @@ class ShuffleTurnOrderOnStart(Rule):
 
     @classmethod
     def random_init(cls):
-        return cls(value=bool(getrandbits(1)))
+        return cls(**Rule.randomization.get(cls.__name__)())
 
     @classmethod
     def default_init(cls):
-        return cls(value=False)
+        return cls(**Rule.defaults.get(cls.__name__))
 
     def apply(self, *args, **kwargs):
         if self.value and kwargs.get('game_starts_now', False):

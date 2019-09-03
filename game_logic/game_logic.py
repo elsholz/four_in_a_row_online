@@ -33,8 +33,9 @@ class Game:
         self.rules = rules
         self.host = host
         self.participants = [host]
-        self._play_field = PlayField(dimensions=(self.rules.play_field_width, self.rules.play_field_height))
-        self._game_state = GameState.lobby
+        # TODO: Optional: move play field creation to the rules.apply part, when the game is started
+        self._play_field = None  # PlayField(dimensions=(self.rules.play_field_width, self.rules.play_field_height))
+        self._game_state = Game.State.lobby
         self._current_turn = None
         self.card_deck = card_deck
         self.initial_players = None
@@ -52,7 +53,7 @@ class Game:
         return f'Game(\n' + ',\n\t'.join([f'{x}={str(x)}' for x in self.__dict__]) + '\n)'
 
     def start_game(self, host_decision=False):
-        """"""
+        """Function called from the backend to start the game, if it can be started.f"""
 
         def game_can_be_started(_host_decision):
             """Decide if the game can be started. Otherwise raise an exception stating the reason for the failure
@@ -105,14 +106,13 @@ class Game:
             self._game_state = Game.State.started
             self._current_turn = 0
 
-            #if self.rules.shuffle_turn_order_on_start:
+            # if self.rules.shuffle_turn_order_on_start:
             #    random.shuffle(self.participants)
             # replaced by:
-            self.rules.apply(game=self)
 
-
+            # apply the rules, e.g. shuffle the turn order on start
+            self.rules.apply(game=self, game_starts_now=True)
             self.initial_players = self.participants[:]
-
 
     def place_token(self, player, loc_x, loc_y):
         # print(self._play_field.can_place_token(self.rules, player, loc_x, loc_y))

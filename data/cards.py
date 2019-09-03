@@ -1,6 +1,25 @@
+"""This module contains all available rules."""
+
+import random
+
+
 class Card:
-    defaults = {}
-    randomization = {}
+    # TODO: Convert simple values to dictionaries
+    data_fields = [x.strip() for x in '''card_shuffle_turn_order
+                    card_reverse_turn_order
+                    card_skip_next_turn
+                    card_placing_cooldown'''.splitlines()]
+
+    defaults = dict(zip(
+        data_fields,
+        [{'value': v} for v in [True, True, True, 4]]
+    ))
+
+    randomization = dict(zip(
+        data_fields,
+        [lambda: {'value': bool(random.getrandbits(1))}] * 3 +
+        [lambda: {'value':random.randrange(0, 10)}]
+    ))
 
     def __init__(self, *args, **kwargs):
         self.__dict__.update(kwargs)
