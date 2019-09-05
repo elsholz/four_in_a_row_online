@@ -2,6 +2,8 @@ from collections import namedtuple
 from dataclasses import dataclass
 import webcolors
 import random
+from loguru import logger
+from colorama import ansi
 
 
 class DataContainer:
@@ -32,6 +34,11 @@ class DataContainer:
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
+
+    def __str__(self):
+        return f'{self.__class__.__name__}(' + \
+               f'{", ".join([k + "=" + str(v) for k, v in self.__dict__.items()])}' \
+               + ')'
 
 
 @dataclass
@@ -81,7 +88,7 @@ class RulesData:
 
     defaults = dict(zip(
         data_fields,
-        [True, True, True, True, False, 4, True, False, False, 2, True, False, 8, 6, True]
+        [True, True, True, True, False, 4, True, False, False, 2, True, False, 7, 6, True]
     ))
 
     randomization = dict(zip(
@@ -209,6 +216,9 @@ class Player(PlayerData, DataContainer):
         self.token_style = token_style
         self.is_ready = False
 
+    def __hash__(self):
+        return hash(self.name)
+
 
 @dataclass
 class PlayField:
@@ -220,11 +230,13 @@ class PlayField:
 
     dimensions: (int, int)
     fields: []
+    player_colors_pretty_print: dict()
 
     def __init__(self, dimensions):
         self.dimensions = dimensions
         x, y = self.dimensions
         self.fields = [[Field((x, y)) for x in range(x)] for y in range(y)]
+        self.player_colors_pretty_print = {}
 
     def _check_for_winning_rows(self, rules, player):
         """Check, if there are any rows on the field long enough for the specified player to win the game."""
@@ -252,6 +264,12 @@ class PlayField:
             pass
 
     def place_token(self, rules, player, loc_x, loc_y):
+        if not player in self.player_colors_pretty_print:
+            self.player_colors_pretty_print[player] = [
+                'x', 'o'
+                #ansi.Fore.RED, ansi.Fore.CYAN, ansi.Fore.GREEN, ansi.Fore.LIGHTMAGENTA_EX
+            ][len(self.player_colors_pretty_print)]
+
         def pt():
             self.fields[loc_y][loc_x].occupation = player
 
@@ -262,13 +280,30 @@ class PlayField:
                         self.fields[loc_y][loc_x].occupation is None):
                     pt()
                 else:
-                    print(loc_x, loc_y, self.fields[loc_y - 1][loc_x].occupation, self.fields[loc_y][loc_x])
+                    # print(loc_x, loc_y, self.fields[loc_y - 1][loc_x].occupation, self.fields[loc_y][loc_x])
                     raise PlayField.IllegalTokenLocation()
             else:
-                if self.fields[loc_y][loc_x] is None:
+                if self.fields[loc_y][loc_x].occupation is None:
                     pt()
+                else:
+                    raise PlayField.IllegalTokenLocation()
         else:
             raise PlayField.IllegalTokenLocation()
+
+    def remove_token(self):
+        pass
+
+    def pretty_print(self, curses=False):
+        res = ['']
+        # self.player_colors_pretty_print[x.occupation]+ ansi.Fore.BLUE
+
+        for line in reversed(self.fields):
+            res.append("".join(["|".join([''] + [
+            6 * self.player_colors_pretty_print[x.occupation] if x.occupation else '      ' for x in line] + ['']) + '\n'] * 3))
+        res.append('')
+        joint = ('-' * ((len(res[1]) - 2) // 3)) + '\n'
+        # print(joint)
+        return joint.join(res)
 
 
 @dataclass

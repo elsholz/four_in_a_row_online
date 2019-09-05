@@ -72,7 +72,46 @@ class TestData(TestCase):
             self.assertEqual(p, p)
 
     def test_play_field(self):
-        pass
+        rules = Rules.default_init()
+
+        four_x_four = PlayField(dimensions=(rules.play_field_width, rules.play_field_height))
+        p1, p2 = Player.random_init(), Player.random_init()
+        print(f'Player 1: {p1}\t Player 2:{p2}')
+
+        four_x_four.place_token(rules, player=p1, loc_x=0, loc_y=0)
+
+        # four_x_four.pretty_print()
+
+        # assert error is raised, if player tries to put token where
+        # 1. one of his tokens is already placed
+        with self.assertRaises(PlayField.IllegalTokenLocation):
+            four_x_four.place_token(rules, player=p1, loc_y=0, loc_x=0)
+        # 2. one of his opponents tokens is already placed
+        with self.assertRaises(PlayField.IllegalTokenLocation):
+            four_x_four.place_token(rules, player=p2, loc_y=0, loc_x=0)
+
+        with self.assertRaises(PlayField.IllegalTokenLocation):
+            four_x_four.place_token(rules, player=p2, loc_y=2, loc_x=0)
+
+        four_x_four.place_token(rules, player=p2, loc_y=1, loc_x=0)
+        four_x_four.place_token(rules, player=p2, loc_y=2, loc_x=0)
+
+        with self.assertRaises(PlayField.IllegalTokenLocation):
+            four_x_four.place_token(rules, player=p2, loc_y=2, loc_x=2)
+        # set rules to no gravity: token should be able to float
+        rules.enable_gravity = False
+        four_x_four.place_token(rules, player=p2, loc_y=2, loc_x=2)
+
+        a = """
+        Stuff left to test:
+        
+        player tries to place a token at a position where there is already on of their tokens
+        player tries to place flying token without gravity
+        player tries to place token where opponent token is already placed
+        player tries to place token out of bounds
+        specify reasons for invalid token locations        
+        """
+        four_x_four.pretty_print()
 
     def test_field(self):
         pass
