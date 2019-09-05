@@ -111,9 +111,10 @@ class TestData(TestCase):
         player tries to place token out of bounds
         specify reasons for invalid token locations        
         """
-        four_x_four.pretty_print()
+        print(four_x_four.pretty_print())
 
     def test_field(self):
+        """Is there even anything to test here? Probably not…"""
         pass
 
 

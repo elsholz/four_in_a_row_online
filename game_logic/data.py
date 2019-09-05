@@ -84,11 +84,12 @@ class RulesData:
         variable_player_count
         play_field_width
         play_field_height
-        enable_gravity'''.splitlines()]
+        enable_gravity
+        game_is_public'''.splitlines()]
 
     defaults = dict(zip(
         data_fields,
-        [True, True, True, True, False, 4, True, False, False, 2, True, False, 7, 6, True]
+        [True, True, True, True, False, 4, True, False, False, 2, True, False, 7, 6, True, True]
     ))
 
     randomization = dict(zip(
@@ -96,7 +97,7 @@ class RulesData:
         [lambda: bool(random.getrandbits(1)) for _ in range(5)] + [lambda: random.randrange(2, 16)] +
         [lambda: bool(random.getrandbits(1)) for _ in range(3)] + [lambda: random.randrange(2, 10)] +
         [lambda: bool(random.getrandbits(1))] * 2 + [lambda: random.randrange(2, 10)] * 2 +
-        [lambda: bool(random.getrandbits(1))]
+        [lambda: bool(random.getrandbits(1))] * 2
     ))
 
 
@@ -128,6 +129,7 @@ class TokenStyleData:
         data_fields,
         [(255, 3, 5, 255), None]
     ))
+
 
     randomization = dict(zip(
         data_fields,
