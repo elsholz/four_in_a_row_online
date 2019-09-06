@@ -43,6 +43,7 @@ class DataContainer:
 
 @dataclass
 class CardDeckData:
+    """Containing defaults and randomization for initialization of Card Decks."""
     data_fields = [x.strip() for x in '''card_shuffle_turn_order
                 card_reverse_turn_order
                 card_skip_next_turn
@@ -61,6 +62,11 @@ class CardDeckData:
 
 @dataclass()
 class CardDeck(CardDeckData, DataContainer):
+    """Represents a Deck of cards. Cards can be placed by players, and represent a unique play action
+    that alters the state of the game. Cards also have a cool down, so cards cannot be applied
+    directly after one another. More detailed characteristics of cards and their role in the
+    game mechanics is yet to be exxplored."""
+
     def __init__(self, **kwargs):
         DataContainer.__init__(self, **kwargs)
 
@@ -70,6 +76,8 @@ class CardDeck(CardDeckData, DataContainer):
 
 @dataclass
 class RulesData:
+    """Class providing information for random ruls initialization and default rules."""
+    # TODO allow spectators
     data_fields = [x.strip() for x in '''shuffle_turn_order_on_start
         enable_chat
         finish_game_on_disconnect
@@ -103,6 +111,11 @@ class RulesData:
 
 @dataclass
 class Rules(RulesData, DataContainer):
+    """Represents a set of rules, that apply to a game. Rules can both affect the game mecahnics directly
+    or affect some meta data for the game. An instance of the latter case is the rul `game_is_public`,
+    which is used to define whether or not the game will be accessible to players via a list of all
+    available games, or if they can just be joined directly."""
+
     def __init__(self, **kwargs):
         DataContainer.__init__(self, **kwargs)
 
@@ -122,6 +135,7 @@ class Rules(RulesData, DataContainer):
 
 @dataclass
 class TokenStyleData:
+    """Holds data for randomization and default initialization of token styles."""
     data_fields = [x.strip() for x in '''color
                 img_src'''.splitlines()]
 
@@ -129,7 +143,6 @@ class TokenStyleData:
         data_fields,
         [(255, 3, 5, 255), None]
     ))
-
 
     randomization = dict(zip(
         data_fields,
@@ -186,6 +199,7 @@ class TokenStyle(TokenStyleData, DataContainer):
 
 
 class PlayerData():
+    """Offering default and randomization values and functions for player class initialization."""
     data_fields = [x.strip() for x in '''name
     token_style
     is_ready'''.splitlines()]
@@ -269,7 +283,7 @@ class PlayField:
         if not player in self.player_colors_pretty_print:
             self.player_colors_pretty_print[player] = [
                 'x', 'o'
-                #ansi.Fore.RED, ansi.Fore.CYAN, ansi.Fore.GREEN, ansi.Fore.LIGHTMAGENTA_EX
+                # ansi.Fore.RED, ansi.Fore.CYAN, ansi.Fore.GREEN, ansi.Fore.LIGHTMAGENTA_EX
             ][len(self.player_colors_pretty_print)]
 
         def pt():
@@ -292,16 +306,20 @@ class PlayField:
         else:
             raise PlayField.IllegalTokenLocation()
 
-    def remove_token(self):
-        pass
+    def remove_token(self, x, y):
+        self.fields[y][x].occupation = None
 
     def pretty_print(self, curses=False):
         res = ['']
         # self.player_colors_pretty_print[x.occupation]+ ansi.Fore.BLUE
 
         for line in reversed(self.fields):
-            res.append("".join(["|".join([''] + [
-            6 * self.player_colors_pretty_print[x.occupation] if x.occupation else '      ' for x in line] + ['']) + '\n'] * 3))
+            res.append(
+                "".join(["|".join([''] + [
+                    6 * self.player_colors_pretty_print[
+                        x.occupation] if x.occupation else '      ' for x in line
+                ] + ['']) + '\n'] * 3)
+            )
         res.append('')
         joint = ('-' * ((len(res[1]) - 2) // 3)) + '\n'
         # print(joint)
@@ -310,7 +328,7 @@ class PlayField:
 
 @dataclass
 class Field:
-    """Data class to represent a single field on a play field. The field can be occupied or empty. 
+    """Data class to represent a single cell on a play field. The field can be occupied or empty.
     The absolute location of the field in the play field is also saved."""
     occupation: Player
     location: (int, int)

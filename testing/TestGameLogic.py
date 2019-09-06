@@ -113,6 +113,11 @@ class TestData(TestCase):
         """
         print(four_x_four.pretty_print())
 
+        four_x_four.remove_token(2,2)
+        print(four_x_four.pretty_print())
+
+        self.assertIsNone(four_x_four.fields[2][2].occupation)
+
     def test_field(self):
         """Is there even anything to test here? Probably not…"""
         pass
