@@ -4,6 +4,7 @@ import webcolors
 import random
 from loguru import logger
 from colorama import ansi
+from four_in_a_row_online.data import cards
 
 
 class DataContainer:
@@ -44,10 +45,11 @@ class DataContainer:
 @dataclass
 class CardDeckData:
     """Containing defaults and randomization for initialization of Card Decks."""
+
+    # TODO: Update to use objects of data/cards/Card type
     data_fields = [x.strip() for x in '''card_shuffle_turn_order
                 card_reverse_turn_order
-                card_skip_next_turn
-                card_placing_cooldown'''.splitlines()]
+                card_skip_next_turn'''.splitlines()]
 
     defaults = dict(zip(
         data_fields,
@@ -60,7 +62,7 @@ class CardDeckData:
     ))
 
 
-@dataclass()
+@dataclass
 class CardDeck(CardDeckData, DataContainer):
     """Represents a Deck of cards. Cards can be placed by players, and represent a unique play action
     that alters the state of the game. Cards also have a cool down, so cards cannot be applied
@@ -73,7 +75,8 @@ class CardDeck(CardDeckData, DataContainer):
     def __eq__(self, other):
         return DataContainer.__eq__(self, other)
     
-    def place_card(self, card, ):
+    def place_card(self, card: cards.Card, *args, **kwargs):
+        card.play(*agrs, **kwargs)
 
 
 @dataclass
@@ -95,11 +98,12 @@ class RulesData:
         play_field_width
         play_field_height
         enable_gravity
-        game_is_public'''.splitlines()]
+        game_is_public
+        card_placement_cooldown'''.splitlines()]
 
     defaults = dict(zip(
         data_fields,
-        [True, True, True, True, False, 4, True, False, False, 2, True, False, 7, 6, True, True]
+        [True, True, True, True, False, 4, True, False, False, 2, True, False, 7, 6, True, True, 3]
     ))
 
     randomization = dict(zip(
@@ -107,7 +111,7 @@ class RulesData:
         [lambda: bool(random.getrandbits(1)) for _ in range(5)] + [lambda: random.randrange(2, 16)] +
         [lambda: bool(random.getrandbits(1)) for _ in range(3)] + [lambda: random.randrange(2, 10)] +
         [lambda: bool(random.getrandbits(1))] * 2 + [lambda: random.randrange(2, 10)] * 2 +
-        [lambda: bool(random.getrandbits(1))] * 2
+        [lambda: bool(random.getrandbits(1))] * 2 + [lambda :random.randrange(0,10)]
     ))
 
 
