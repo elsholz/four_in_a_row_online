@@ -72,6 +72,8 @@ class CardDeck(CardDeckData, DataContainer):
 
     def __eq__(self, other):
         return DataContainer.__eq__(self, other)
+    
+    def place_card(self, card, ):
 
 
 @dataclass
