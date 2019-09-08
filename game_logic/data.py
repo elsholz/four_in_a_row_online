@@ -1,9 +1,5 @@
-from collections import namedtuple
 from dataclasses import dataclass
-import webcolors
 import random
-from loguru import logger
-from colorama import ansi
 from four_in_a_row_online.data import cards
 
 
@@ -77,7 +73,7 @@ class CardDeck(CardDeckData, DataContainer):
 
     def __eq__(self, other):
         return DataContainer.__eq__(self, other)
-    
+
     def place_card(self, card: cards.Card, *args, **kwargs):
         card.play(*args, **kwargs)
 
@@ -114,7 +110,7 @@ class RulesData:
         [lambda: bool(random.getrandbits(1)) for _ in range(5)] + [lambda: random.randrange(2, 16)] +
         [lambda: bool(random.getrandbits(1)) for _ in range(3)] + [lambda: random.randrange(2, 10)] +
         [lambda: bool(random.getrandbits(1))] * 2 + [lambda: random.randrange(2, 10)] * 2 +
-        [lambda: bool(random.getrandbits(1))] * 2 + [lambda :random.randrange(0,10)]
+        [lambda: bool(random.getrandbits(1))] * 2 + [lambda: random.randrange(0, 10)]
     ))
 
 
@@ -207,7 +203,7 @@ class TokenStyle(TokenStyleData, DataContainer):
         return not TokenStyle.distinguishable(self, other)
 
 
-class PlayerData():
+class PlayerData:
     """Offering default and randomization values and functions for player class initialization."""
     data_fields = [x.strip() for x in '''name
     token_style

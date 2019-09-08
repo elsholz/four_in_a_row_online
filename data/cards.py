@@ -1,7 +1,6 @@
 """This module contains all available rules."""
 
 import random
-from four_in_a_row_online.game_logic.game_logic import Game
 
 
 class Card:
@@ -15,7 +14,7 @@ class Card:
 class ShuffleTurnOrder(Card):
     @staticmethod
     def play(*args, **kwargs):
-        game: Game = kwargs.get('game', None)
+        game = kwargs.get('game', None)
         if game:
             random.shuffle(game.participants)
 
@@ -23,24 +22,24 @@ class ShuffleTurnOrder(Card):
 class ReverseTurnOrder(Card):
     @staticmethod
     def play(*args, **kwargs):
-        game: Game = kwargs.get('game', None)
+        game = kwargs.get('game', None)
         if game:
-            # TODO: Mute the list thus that the player who had the last turn
-            # TODO: has the next turn.
-
+            # turn_id = 3, len = 5
             # [1, 2, 3, 4, 5]
             #           ^
             # 4 → Reverse Turn Order
             # [5, 4, 3, 2, 1]
+            #
             # [2, 1, 5, 4, 3]
             #              ^
             game.participants.reverse()
-            # game.participants = game.participants[] + game.participants[]
+            split = len(game.participants) - (game.current_turn() - 1) % len(game.participants)
+            game.participants = game.participants[split:] + game.participants[:split]
 
 
 class SkipNextTurn(Card):
     @staticmethod
     def play(*args, **kwargs):
-        game: Game = kwargs.get('game', None)
+        game = kwargs.get('game', None)
         if game:
             game.next_turn()
