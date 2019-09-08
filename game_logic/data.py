@@ -47,9 +47,12 @@ class CardDeckData:
     """Containing defaults and randomization for initialization of Card Decks."""
 
     # TODO: Update to use objects of data/cards/Card type
-    data_fields = [x.strip() for x in '''card_shuffle_turn_order
-                card_reverse_turn_order
-                card_skip_next_turn'''.splitlines()]
+
+    data_fields = [
+        cards.ShuffleTurnOrder,
+        cards.ReverseTurnOrder,
+        cards.SkipNextTurn,
+    ]
 
     defaults = dict(zip(
         data_fields,
@@ -76,7 +79,7 @@ class CardDeck(CardDeckData, DataContainer):
         return DataContainer.__eq__(self, other)
     
     def place_card(self, card: cards.Card, *args, **kwargs):
-        card.play(*agrs, **kwargs)
+        card.play(*args, **kwargs)
 
 
 @dataclass

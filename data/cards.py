@@ -1,57 +1,46 @@
 """This module contains all available rules."""
 
 import random
+from four_in_a_row_online.game_logic.game_logic import Game
 
 
 class Card:
     card_by_name = dict()
 
-    def __init__(self, *args, **kwargs):
-        self.__dict__.update(kwargs)
-
-    def __bool__(self):
-        return self.__dict__.get('value', False)
-
-    def play(self, *args, **kwargs):
+    @staticmethod
+    def play(*args, **kwargs):
         raise NotImplementedError()
 
 
 class ShuffleTurnOrder(Card):
-    def __init__(self, *args, **kwargs):
-        super(ShuffleTurnOrder, self).__init__(*args, **kwargs)
-
-    def play(self, *args, **kwargs):
-        pass
+    @staticmethod
+    def play(*args, **kwargs):
+        game: Game = kwargs.get('game', None)
+        if game:
+            random.shuffle(game.participants)
 
 
 class ReverseTurnOrder(Card):
-    def __init__(self, *args, **kwargs):
-        super(ReverseTurnOrder, self).__init__(*args, **kwargs)
+    @staticmethod
+    def play(*args, **kwargs):
+        game: Game = kwargs.get('game', None)
+        if game:
+            # TODO: Mute the list thus that the player who had the last turn
+            # TODO: has the next turn.
 
-    def play(self, *args, **kwargs):
-        pass
+            # [1, 2, 3, 4, 5]
+            #           ^
+            # 4 → Reverse Turn Order
+            # [5, 4, 3, 2, 1]
+            # [2, 1, 5, 4, 3]
+            #              ^
+            game.participants.reverse()
+            # game.participants = game.participants[] + game.participants[]
 
 
 class SkipNextTurn(Card):
-    def __init__(self, *args, **kwargs):
-        super(SkipNextTurn, self).__init__(*args, **kwargs)
-
-    def play(self, *args, **kwargs):
-        pass
-
-
-Card.card_by_name.update(
-    dict(
-        zip(
-            [
-                x.strip() for x in '''card_shuffle_turn_order
-                card_reverse_turn_order
-                card_skip_next_turn'''.splitlines()
-            ], [
-                ShuffleTurnOrder,
-                ReverseTurnOrder,
-                SkipNextTurn
-            ]
-        )
-    )
-)
+    @staticmethod
+    def play(*args, **kwargs):
+        game: Game = kwargs.get('game', None)
+        if game:
+            game.next_turn()

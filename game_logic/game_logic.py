@@ -122,12 +122,12 @@ class Game:
         else:
             raise Game.IllegalAction()
 
-        if self._current_turn < len(self.participants) - 1:
-            self._current_turn += 1
-        else:
-            self._current_turn = 0
+        self.next_turn()
 
         print(f'Player {player.name} placed token on playfield at {(loc_x, loc_y)}.')
+
+    def next_turn(self):
+        self._current_turn = (self._current_turn + 1) % len(self.participants)
 
     def render_play_field(self):
         p = self._play_field
