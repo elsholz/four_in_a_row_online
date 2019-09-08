@@ -1,6 +1,5 @@
-import random
 from enum import Enum
-from four_in_a_row_online.game_logic.data import Rules, CardDeck, PlayField, Player, TokenStyle, Field
+from four_in_a_row_online.game_logic.data import PlayField, TokenStyle
 
 
 class Game:
@@ -111,6 +110,10 @@ class Game:
             self.rules.apply(game=self)
 
             self.initial_players = self.participants[:]
+
+    @property
+    def current_turn(self):
+        return self._current_turn
 
     def place_token(self, player, loc_x, loc_y):
         # print(self._play_field.can_place_token(self.rules, player, loc_x, loc_y))

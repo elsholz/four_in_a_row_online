@@ -1,6 +1,6 @@
 from unittest import TestCase, main
 from four_in_a_row_online.game_logic.data import *
-from four_in_a_row_online.game_logic.game_logic import *
+from four_in_a_row_online.game_logic.logic import *
 
 
 class TestData(TestCase):
@@ -113,7 +113,7 @@ class TestData(TestCase):
         """
         print(four_x_four.pretty_print())
 
-        four_x_four.remove_token(2,2)
+        four_x_four.remove_token(2, 2)
         print(four_x_four.pretty_print())
 
         self.assertIsNone(four_x_four.fields[2][2].occupation)
