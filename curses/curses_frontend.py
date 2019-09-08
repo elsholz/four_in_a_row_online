@@ -19,12 +19,21 @@ def main(stdscr, players):
     curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
 
+    curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_CYAN)
+    curses.init_pair(4, curses.COLOR_BLACK, curses.COLOR_GREEN)
+
     turn_id = random.randrange(0, 5)
     while True:
         last_line = 1
         stdscr.addstr(0, 0, ' ' + ' ' * 7 * (target[0]) + 'x' * 8 + ' ' * 7 * (7 - target[0]))
         for line in play_field.pretty_print().splitlines():
-            stdscr.addstr(last_line, 1, line, curses.color_pair(1))
+            for ind, character in enumerate(line):
+                colors = {
+                    'o': (' ', curses.color_pair(3)),
+                    'x': (' ', curses.color_pair(4))
+                }
+                stdscr.addstr(last_line, 1 + ind, colors.get(character, (character, None))[0],
+                              colors.get(character, (None, curses.color_pair(1)))[1])
             last_line += 1
         stdscr.addstr(last_line, 0, players[0].name, curses.color_pair(2) if not turn_id % 2 else curses.color_pair(1))
         stdscr.addstr(last_line, 50, players[1].name, curses.color_pair(2) if turn_id % 2 else curses.color_pair(1))
@@ -52,7 +61,7 @@ def main(stdscr, players):
                 'j': lambda: (target[0], target[1] - 1),
                 'k': lambda: (target[0], target[1] + 1),
                 'l': lambda: (target[0] + 1, target[1]),
-            }[key]()
+            }.get(key, lambda: target)()
 
             if not 0 <= target[0] < rules.play_field_width:
                 target = 0, target[1]
