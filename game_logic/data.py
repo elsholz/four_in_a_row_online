@@ -275,9 +275,6 @@ class PlayField:
         #           iterate through all directions
         #           For each direction, go in that direction as far as possible
         #           For each step that does not break the row, for that step's location remove the direction
-        # 4. Iterate through the dictionary:
-        #       For each location that does no longer have any directions associated to it, removed that item
-        #       from the dictionary
 
         applicable_fields = [f for row in self.fields for f in row if f.occupation == player]
 
@@ -300,15 +297,14 @@ class PlayField:
                 br = False
 
                 while True:
+                    next_location = flatten(next_location, current_direction)
                     if br:
                         directions.remove(current_direction)
                         break
                     if (
                             rules.field_has_bounds and (0 <= next_location[0] < rules.play_field_width)
-                            and (0 <= next_location[1] <= rules.play_field_height)
+                            and (0 <= next_location[1] < rules.play_field_height)
                     ):
-                        next_location = flatten(next_location, current_direction)
-
                         if self.get_field(next_location[0], next_location[1]).occupation == player:
                             next_directions = origins.get(next_location, [])
                             if next_directions:

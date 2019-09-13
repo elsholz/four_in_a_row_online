@@ -119,17 +119,79 @@ class TestData(TestCase):
         self.assertIsNone(four_x_four.fields[2][2].occupation)
         four_x_four.remove_token(0, 0)
 
-        # place two tokens to build a row:
         four_x_four.place_token(rules, player=p2, loc_y=3, loc_x=0)
         print(four_x_four.pretty_print())
         winning_rows = four_x_four._check_for_winning_rows(rules, p2)
+        self.assertIsNone(winning_rows)
         print(f'Winning rows for above field: {winning_rows}')
 
+        # test bottom to top
         four_x_four.place_token(rules, player=p2, loc_y=4, loc_x=0)
         print(four_x_four.pretty_print())
         winning_rows = four_x_four._check_for_winning_rows(rules, p2)
         print(f'Winning rows for above field: {winning_rows}')
+        self.assertEqual([(0, 1), (0, 2), (0, 3), (0, 4)], winning_rows)
 
+        # test diagonal bottom right to top left
+        four_x_four = PlayField(dimensions=(rules.play_field_width, rules.play_field_height))
+        four_x_four.place_token(rules, p2, loc_x=1, loc_y=4)
+        four_x_four.place_token(rules, p2, loc_x=2, loc_y=3)
+        four_x_four.place_token(rules, p2, loc_x=3, loc_y=2)
+        four_x_four.place_token(rules, p2, loc_x=4, loc_y=1)
+
+        print(four_x_four.pretty_print())
+        winning_rows = four_x_four._check_for_winning_rows(rules, p2)
+        print(f'Winning rows for above field: {winning_rows}')
+        self.assertEqual([(4, 1), (3, 2), (2, 3), (1, 4)], winning_rows)
+
+        # test left to right
+        four_x_four = PlayField(dimensions=(rules.play_field_width, rules.play_field_height))
+        y = rules.play_field_height - 1
+        four_x_four.place_token(rules, p2, loc_x=6, loc_y=y)
+        four_x_four.place_token(rules, p2, loc_x=3, loc_y=y)
+        four_x_four.place_token(rules, p2, loc_x=4, loc_y=y)
+        four_x_four.place_token(rules, p2, loc_x=5, loc_y=y)
+
+        print(four_x_four.pretty_print())
+        winning_rows = four_x_four._check_for_winning_rows(rules, p2)
+        print(f'Winning rows for above field: {winning_rows}')
+        self.assertEqual([(3, y), (4, y), (5, y), (6, y)], winning_rows)
+
+        # test diagonal bottom left to top right
+        four_x_four = PlayField(dimensions=(rules.play_field_width, rules.play_field_height))
+        four_x_four.place_token(rules, p2, loc_x=0, loc_y=2)
+        four_x_four.place_token(rules, p2, loc_x=1, loc_y=3)
+        four_x_four.place_token(rules, p2, loc_x=2, loc_y=4)
+        four_x_four.place_token(rules, p2, loc_x=3, loc_y=5)
+
+        print(four_x_four.pretty_print())
+        winning_rows = four_x_four._check_for_winning_rows(rules, p2)
+        print(f'Winning rows for above field: {winning_rows}')
+        self.assertEqual([(0, 2), (1, 3), (2, 4), (3, 5)], winning_rows)
+
+        # test full field
+
+        four_x_four = PlayField(dimensions=(rules.play_field_width, rules.play_field_height))
+        field = ''' o#ooo#o
+                    #o#o#o#
+                    o#o#o#o
+                    ##o###o
+                    #o#ooo#
+                    o#o#o#o'''
+
+        for y, line in enumerate(reversed(field.splitlines())):
+            line = line.strip()
+            for x, char in enumerate(line):
+                four_x_four.place_token(rules, p1 if char == 'o' else p2, loc_x=x, loc_y=y)
+
+        print(four_x_four.pretty_print())
+        winning_rows = four_x_four._check_for_winning_rows(rules, p1)
+        print(f'Winning rows for above field for player x: {winning_rows}')
+        self.assertIsNone(winning_rows)
+
+        winning_rows = four_x_four._check_for_winning_rows(rules, p2)
+        print(f'Winning rows for above field for player o: {winning_rows}')
+        self.assertEqual([(4, 2), (3, 3), (2, 4), (1, 5)], winning_rows)
 
     def test_field(self):
         """Is there even anything to test here? Probably not…"""
