@@ -102,21 +102,34 @@ class TestData(TestCase):
         rules.enable_gravity = False
         four_x_four.place_token(rules, player=p2, loc_y=2, loc_x=2)
 
-        a = """
-        Stuff left to test:
-        
-        player tries to place a token at a position where there is already on of their tokens
-        player tries to place flying token without gravity
-        player tries to place token where opponent token is already placed
-        player tries to place token out of bounds
-        specify reasons for invalid token locations        
-        """
+        with self.assertRaises(PlayField.IllegalTokenLocation):
+            four_x_four.place_token(rules, player=p2, loc_y=0, loc_x=rules.play_field_width)
+
+        with self.assertRaises(PlayField.IllegalTokenLocation):
+            four_x_four.place_token(rules, player=p2, loc_y=rules.play_field_height, loc_x=0)
+
+        with self.assertRaises(PlayField.IllegalTokenLocation):
+            four_x_four.place_token(rules, player=p2, loc_y=rules.play_field_height, loc_x=rules.play_field_width)
+
         print(four_x_four.pretty_print())
 
         four_x_four.remove_token(2, 2)
         print(four_x_four.pretty_print())
 
         self.assertIsNone(four_x_four.fields[2][2].occupation)
+        four_x_four.remove_token(0, 0)
+
+        # place two tokens to build a row:
+        four_x_four.place_token(rules, player=p2, loc_y=3, loc_x=0)
+        print(four_x_four.pretty_print())
+        winning_rows = four_x_four._check_for_winning_rows(rules, p2)
+        print(f'Winning rows for above field: {winning_rows}')
+
+        four_x_four.place_token(rules, player=p2, loc_y=4, loc_x=0)
+        print(four_x_four.pretty_print())
+        winning_rows = four_x_four._check_for_winning_rows(rules, p2)
+        print(f'Winning rows for above field: {winning_rows}')
+
 
     def test_field(self):
         """Is there even anything to test here? Probably not…"""

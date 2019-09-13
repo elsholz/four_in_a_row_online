@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 import random
 from four_in_a_row_online.data import cards
+from collections import namedtuple
+from tuple_flatten import flatten
 
 
 class DataContainer:
@@ -45,19 +47,21 @@ class CardDeckData:
     # TODO: Update to use objects of data/cards/Card type
 
     data_fields = [
-        cards.ShuffleTurnOrder,
-        cards.ReverseTurnOrder,
-        cards.SkipNextTurn,
+        x.__name__ for x in [
+            cards.ShuffleTurnOrder,
+            cards.ReverseTurnOrder,
+            cards.SkipNextTurn,
+        ]
     ]
 
     defaults = dict(zip(
         data_fields,
-        [True, True, True, 4]
+        [True, True, True]
     ))
 
     randomization = dict(zip(
         data_fields,
-        [lambda: bool(random.getrandbits(1))] * 3 + [lambda: random.randrange(0, 10)]
+        [lambda: bool(random.getrandbits(1))] * 3
     ))
 
 
@@ -66,7 +70,7 @@ class CardDeck(CardDeckData, DataContainer):
     """Represents a Deck of cards. Cards can be placed by players, and represent a unique play action
     that alters the state of the game. Cards also have a cool down, so cards cannot be applied
     directly after one another. More detailed characteristics of cards and their role in the
-    game mechanics is yet to be exxplored."""
+    game mechanics is yet to be explored."""
 
     def __init__(self, **kwargs):
         DataContainer.__init__(self, **kwargs)
@@ -80,7 +84,7 @@ class CardDeck(CardDeckData, DataContainer):
 
 @dataclass
 class RulesData:
-    """Class providing information for random ruls initialization and default rules."""
+    """Class providing information for random rules initialization and default rules."""
     # TODO allow spectators
     data_fields = [x.strip() for x in '''shuffle_turn_order_on_start
         enable_chat
@@ -251,44 +255,80 @@ class PlayField:
 
     dimensions: (int, int)
     fields: []
-    player_colors_pretty_print: dict()
+    player_colors_pretty_print: dict
 
     def __init__(self, dimensions):
         self.dimensions = dimensions
-        x, y = self.dimensions
-        self.fields = [[Field((x, y)) for x in range(x)] for y in range(y)]
+        width, height = self.dimensions
+        self.fields = [[Field((x, y)) for x in range(width)] for y in range(height)]
         self.player_colors_pretty_print = {}
 
     def _check_for_winning_rows(self, rules, player):
         """Check, if there are any rows on the field long enough for the specified player to win the game."""
-        applicable_fields = [f for row in self.fields for f in row if f.occupation == player]
-        start_points = set()
-        for field in applicable_fields:
-            if rules.field_has_bounds:
-                if set() == {
-                    f for f in applicable_fields if
-                    abs(f.location[0] - field.location[0]) > 1 or
-                    abs(f.location[1] - field.location[1]) > 1
-                }:
-                    start_points.add(field)
-            else:
-                if set() == {
-                    f for f in applicable_fields if
-                    abs((1 + f.location[0]) % self.dimensions[0] - field.location[0]) == 1 or
-                    abs((1 + f.location[1]) % self.dimensions[1] - field.location[1]) == 1
-                }:
-                    start_points.add(field)
 
-        for pivot in start_points:
-            # create row object for each direction. For each direction go through until the next field is no longer
-            # within applicable_fields
-            pass
+        # New Idea:
+        # 1.    For all cells that are held by the specified player on the play field:
+        #           Add to the dictionary a tuple of the field's coordinates mapped to all directions.
+        # 2.    Save all locations (which are the keys of the dictionary) to a list.
+        # 3.    Iterate through the newly created list:
+        #           For each location, get either the directions or an empty list from the dictionary and
+        #           iterate through all directions
+        #           For each direction, go in that direction as far as possible
+        #           For each step that does not break the row, for that step's location remove the direction
+        # 4. Iterate through the dictionary:
+        #       For each location that does no longer have any directions associated to it, removed that item
+        #       from the dictionary
+
+        applicable_fields = [f for row in self.fields for f in row if f.occupation == player]
+
+        directions = [
+            # x, y
+            (-1, 1), (0, 1), (1, 1), (1, 0)
+        ]
+
+        # 1.
+        origins = {cell.location: list(directions) for cell in applicable_fields}
+
+        # 2. and 3.
+        for current_location in list(origins.keys()):
+            directions = origins.get(current_location, [])
+
+            for current_direction in list(directions):
+                # Follow the current direction as far as possible
+                row = [current_location]
+                next_location = current_location
+                br = False
+
+                while True:
+                    if br:
+                        directions.remove(current_direction)
+                        break
+                    if (
+                            rules.field_has_bounds and (0 <= next_location[0] < rules.play_field_width)
+                            and (0 <= next_location[1] <= rules.play_field_height)
+                    ):
+                        next_location = flatten(next_location, current_direction)
+
+                        if self.get_field(next_location[0], next_location[1]).occupation == player:
+                            next_directions = origins.get(next_location, [])
+                            if next_directions:
+                                next_directions.remove(current_direction)
+                            row.append(next_location)
+                            if len(row) == rules.winning_row_length:
+                                return row
+
+                        else:
+                            br = True
+                    else:
+                        br = True
+
+    def get_field(self, x, y):
+        return self.fields[y][x]
 
     def place_token(self, rules, player, loc_x, loc_y):
-        if not player in self.player_colors_pretty_print:
+        if player not in self.player_colors_pretty_print:
             self.player_colors_pretty_print[player] = [
-                'x', 'o'
-                # ansi.Fore.RED, ansi.Fore.CYAN, ansi.Fore.GREEN, ansi.Fore.LIGHTMAGENTA_EX
+                'x', 'o', '*', '#'
             ][len(self.player_colors_pretty_print)]
 
         def pt():

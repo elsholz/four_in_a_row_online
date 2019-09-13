@@ -1,6 +1,7 @@
 import curses
 from curses import wrapper
-from four_in_a_row_online.game_logic.game_logic import *
+from four_in_a_row_online.game_logic.logic import *
+from four_in_a_row_online.game_logic.data import *
 
 
 def main(stdscr, players):
@@ -50,7 +51,19 @@ def main(stdscr, players):
 
         if key == '\n':
             try:
-                play_field.place_token(rules, players[turn_id % len(players)], loc_x=target[0], loc_y=target[1])
+                current_player = players[turn_id % len(players)]
+                play_field.place_token(rules, current_player, loc_x=target[0], loc_y=target[1])
+
+                rows = play_field._check_for_winning_rows(rules, current_player)
+                if rows:
+                    stdscr.clear()
+                    stdscr.addstr(0,0, f'Player {current_player.name} Wins!')
+                    stdscr.addstr(1,0, 'Press q to exit')
+                    stdscr.refresh()
+                    while True:
+                        if stdscr.getkey() == 'q':
+                            curses.endwin()
+                            exit(0)
                 turn_id += 1
             except PlayField.IllegalTokenLocation as e:
                 pass

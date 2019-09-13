@@ -43,3 +43,7 @@ class SkipNextTurn(Card):
         game = kwargs.get('game', None)
         if game:
             game.next_turn()
+
+Card.card_by_name = {
+    x.__name__: x for x in [ShuffleTurnOrder, ReverseTurnOrder, SkipNextTurn]
+}
