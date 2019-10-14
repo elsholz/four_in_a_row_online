@@ -23,6 +23,9 @@ def main(stdscr, players):
     curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_CYAN)
     curses.init_pair(4, curses.COLOR_BLACK, curses.COLOR_GREEN)
 
+    curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_RED)
+    curses.init_pair(6, curses.COLOR_BLACK, curses.COLOR_YELLOW)
+
     turn_id = random.randrange(0, 5)
     while True:
         last_line = 1
@@ -31,14 +34,24 @@ def main(stdscr, players):
             for ind, character in enumerate(line):
                 colors = {
                     'o': (' ', curses.color_pair(3)),
-                    'x': (' ', curses.color_pair(4))
+                    'x': (' ', curses.color_pair(4)),
+                    '#': (' ', curses.color_pair(5)),
+                    '*': (' ', curses.color_pair(6))
                 }
                 stdscr.addstr(last_line, 1 + ind, colors.get(character, (character, None))[0],
                               colors.get(character, (None, curses.color_pair(1)))[1])
             last_line += 1
-        stdscr.addstr(last_line, 0, players[0].name, curses.color_pair(2) if not turn_id % 2 else curses.color_pair(1))
-        stdscr.addstr(last_line, 50, players[1].name, curses.color_pair(2) if turn_id % 2 else curses.color_pair(1))
+        stdscr.addstr(last_line, 0, players[0].name,
+                      curses.color_pair(2) if turn_id % len(players) == 0 else curses.color_pair(1))
+        stdscr.addstr(last_line, 50, players[1].name,
+                      curses.color_pair(2) if turn_id % len(players) == 1 else curses.color_pair(1))
 
+        if len(players) > 2:
+            stdscr.addstr(last_line + 1, 0, players[2].name,
+                          curses.color_pair(2) if turn_id % len(players) == 2 else curses.color_pair(1))
+        if len(players) > 3:
+            stdscr.addstr(last_line + 1, 50, players[3].name,
+                          curses.color_pair(2) if turn_id % len(players) == 3 else curses.color_pair(1))
         col = ' ' * 4 * (target[1]) + 'x' * 5 + ' ' * 4 * (5 - target[1])
 
         col = ''.join(list(reversed(col)))
@@ -57,8 +70,8 @@ def main(stdscr, players):
                 rows = play_field._check_for_winning_rows(rules, current_player)
                 if rows:
                     stdscr.clear()
-                    stdscr.addstr(0,0, f'Player {current_player.name} Wins!')
-                    stdscr.addstr(1,0, 'Press q to exit')
+                    stdscr.addstr(0, 0, f'Player {current_player.name} Wins!')
+                    stdscr.addstr(1, 0, 'Press q to exit')
                     stdscr.refresh()
                     while True:
                         if stdscr.getkey() == 'q':
