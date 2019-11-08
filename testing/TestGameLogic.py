@@ -1,6 +1,7 @@
 from unittest import TestCase, main
 from four_in_a_row_online.game_logic.data import *
 from four_in_a_row_online.game_logic.logic import *
+from four_in_a_row_online.data import cards
 
 
 class TestData(TestCase):
@@ -42,7 +43,7 @@ class TestData(TestCase):
     def test_rules(self):
         self.assertEqual(len(Rules.default_init().__dict__), len(RulesData.data_fields))
         self.assertEqual(len(RulesData.defaults), len(RulesData.randomization))
-        rules = [Rules.random_init() for _ in range(16)]
+        rules = [Rules.random_init() for _ in range(8)]
 
         for r in rules:
             self.assertNotEqual(r, Rules.unique_random([r]))
@@ -54,12 +55,33 @@ class TestData(TestCase):
     def test_card_deck(self):
         self.assertEqual(len(CardDeck.default_init().__dict__), len(CardDeckData.data_fields))
         self.assertEqual(len(CardDeckData.defaults), len(CardDeckData.randomization))
-        card_decks = [CardDeck.random_init() for _ in range(16)]
+        card_decks = [CardDeck.random_init() for _ in range(8)]
 
         for cd in card_decks:
             self.assertNotEqual(cd, CardDeck.unique_random([cd]))
             self.assertNotEqual(cd, CardDeck.unique_random(card_decks))
             self.assertEqual(cd, cd)
+
+        cd = card_decks[0]
+        for card in cards.SkipNextTurn, cards.ReverseTurnOrder, cards.ShuffleTurnOrder:
+            self.assertIsNotNone(cd.__dict__.get(card.__name__, None))
+
+    def test_cards(self):
+        host = Player.default_init()
+        rules = Rules.default_init()
+        rules.number_of_players = 6
+        game = Game(name='TestGame123', host=host, rules=rules,
+                    card_deck=CardDeck.default_init())
+        host.is_ready = True
+        for x in range(5):
+            p = Player.unique_random(existing=game.participants)
+            p.is_ready = True
+            game.player_join(p)
+        game.start_game()
+        cards.SkipNextTurn.play(game=game)
+
+        cards.ReverseTurnOrder.play(game=game)
+        cards.ShuffleTurnOrder.play(game=game)
 
     def test_player(self):
         self.assertEqual(len(Player.default_init().__dict__), len(PlayerData.data_fields))

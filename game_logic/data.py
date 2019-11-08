@@ -21,7 +21,7 @@ class DataContainer:
 
     @classmethod
     def default_init(cls):
-        return cls(**dict([field, cls.defaults[field]] for field in cls.data_fields))
+        return cls(**{field: cls.defaults[field] for field in cls.data_fields})
 
     @classmethod
     def unique_random(cls, existing):
@@ -43,8 +43,6 @@ class DataContainer:
 @dataclass
 class CardDeckData:
     """Containing defaults and randomization for initialization of Card Decks."""
-
-    # TODO: Update to use objects of data/cards/Card type
 
     data_fields = [
         x.__name__ for x in [
@@ -78,7 +76,8 @@ class CardDeck(CardDeckData, DataContainer):
     def __eq__(self, other):
         return DataContainer.__eq__(self, other)
 
-    def place_card(self, card: cards.Card, *args, **kwargs):
+    @staticmethod
+    def place_card(card: cards.Card, *args, **kwargs):
         card.play(*args, **kwargs)
 
 
@@ -225,25 +224,33 @@ class PlayerData:
     ))
 
 
-@dataclass
 class Player(PlayerData, DataContainer):
-    """Data class to represent a player."""
-    name: str
-    token_style: TokenStyle
-    is_ready: bool
+    """Represents a player."""
 
-    # data_fields = PlayerData
-    # defaults = PlayerData.defaults
-    # randomization = PlayerData.randomization
+    data_fields = PlayerData.data_fields
+    defaults = PlayerData.defaults
+    randomization = PlayerData.randomization
 
     def __init__(self, name, token_style, is_ready=False):
         self.name = name
         self.token_style = token_style
-        self.is_ready = False
+        self.is_ready = is_ready
 
     def __hash__(self):
         return hash(self.name)
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.name == other.name
+        return False
+
+    @classmethod
+    def unique_random(cls, existing):
+        while True:
+            random_object = cls.random_init()
+            # check that no object is equal to the random object
+            if all([(not x == random_object) and (not x.token_style == random_object.token_style) for x in existing]):
+                return random_object
 
 @dataclass
 class PlayField:

@@ -102,7 +102,7 @@ class Game:
             # if self.rules.shuffle_turn_order_on_start:
             #    random.shuffle(self.participants)
             # replaced by:
-            self.rules.apply(game=self)
+            #self.rules.apply(game=self)
 
             self.initial_players = self.participants[:]
 
