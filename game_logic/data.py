@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 import random
-from four_in_a_row_online.data import cards
+from data import cards
+from tools import flatten
 from collections import namedtuple
-from tuple_flatten import flatten
-
 
 class DataContainer:
     """Super class for all objects that can be initialized randomly or have a default. Basically just a tool to make
@@ -305,6 +304,7 @@ class PlayField:
 
                 while True:
                     next_location = flatten(next_location, current_direction)
+
                     if br:
                         directions.remove(current_direction)
                         break

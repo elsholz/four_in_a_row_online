@@ -1,7 +1,7 @@
 from unittest import TestCase, main
-from four_in_a_row_online.game_logic.data import *
-from four_in_a_row_online.game_logic.logic import *
-from four_in_a_row_online.data import cards
+from game_logic.data import *
+from game_logic.logic import *
+from data import cards
 
 
 class TestData(TestCase):

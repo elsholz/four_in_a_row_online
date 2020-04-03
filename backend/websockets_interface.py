@@ -1,7 +1,7 @@
 import websockets
 import asyncio
 import json
-from four_in_a_row_online import game_logic
+import game_logic
 import datetime
 from bidict import bidict
 

@@ -1,5 +1,5 @@
 from enum import Enum
-from four_in_a_row_online.game_logic.data import PlayField, TokenStyle
+from game_logic.data import PlayField, TokenStyle
 
 
 class Game:
