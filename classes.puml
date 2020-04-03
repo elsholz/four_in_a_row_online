@@ -1,0 +1,147 @@
+@startuml
+
+class "RuntimeError" as runtime_error
+
+class "Game" as game {
+    name
+    rules
+    host
+    participants
+    _play_field
+    _game_state
+    _current_turn
+    card_deck
+    initial_players
+    ---
+    + __init__(name, host, rules, card_deck)
+    + start_game(self, host_decision)
+    + current_turn(self)
+    + place_token(self, player, loc_x, loc_y)
+    + next_turn(self)
+    + render_play_field(self)
+    + player_join(self, p)
+    + player_leave(self, p)
+    + finish_game(self)
+    + quit_game(self)
+
+
+}
+enum "State" as state {
+    lobby
+    started
+    finished
+    quit
+}
+game +-- game_state
+class "CannotBeStarted" as game_cannot_be_started {
+
+}
+game +-- game_cannot_be_started
+class "InvalidPlayer" as invalid_player {
+
+}
+game +-- invalid_player
+class "IllegalAction" as illegal_action {
+
+}
+game +-- illegal_action
+class "LobbyFull" as lobby_full {
+
+}
+game +-- lobby_full
+
+class "DataContainer" as data_container {
+    data_fields
+    defaults
+    randomization
+    ---
+    + __init__(self, **kwargs)
+    + random_init(cls)
+    + default_init(cls)
+    + unique_random(cls, existing)
+    + __eq__(self, other)
+}
+
+class "CardDeckData" as card_deck_data {
+    data_fields
+    defaults
+    randomization
+}
+
+class "CardDeck" as card_deck {
+    ---
+    + place_card(card, *args, **kwargs)
+}
+
+class "RulesData" as rules_data {
+    data_fields
+    defaults
+    randomization
+}
+
+class "Rules" as rules {
+    ---
+    + __init__(self, **kwargs)
+    + random_init(*args, **kwargs)
+}
+
+class "TokenStyleData" as token_style_data {
+    data_fields
+    defaults
+    randomization
+}
+
+class "TokenStyle" as token_style {
+    color
+    img_src
+    ---
+    + __init__(self, color, img_src)
+    + distinguishable(a, b)
+    + is_distinguishable_init(cls, existing)
+    + __eq__(self, other)
+}
+class TooTransparent {
+}
+token_style +-- TooTransparent
+class OutOfRange {
+}
+token_style +-- OutOfRange
+
+class "PlayerData" as player_data {
+    data_fields
+    defaults
+    randomization
+}
+
+class "Player" as player {
+    data_fields
+    defaults
+    randomization
+    ---
+    + __init__(self, name, token_style, is_ready)
+    + __hash__(self)
+    + __eq__(self, other)
+    + unique_random(cls, existing)
+}
+
+class "PlayField" as play_field {
+    dimensions
+    fields
+    player_colors_pretty_print
+    ---
+    + __init__(self, dimensions)
+    - _check_for_winning_rows(self, rules, player)
+    + get_field(self, x, y)
+    + place_token(self, rules, player, loc_x, loc_y)
+    + remove_token(self, x, y)
+    + pretty_print(self, curses)
+}
+
+class "Field" as field {
+    occupation
+    location
+    ---
+    + __init__(self, location)
+}
+
+@enduml
