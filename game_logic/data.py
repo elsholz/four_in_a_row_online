@@ -191,7 +191,7 @@ class TokenStyle(TokenStyleData, DataContainer):
         return sum([abs(col_a - col_b) for col_a, col_b in zip(a.color, b.color)]) > (4 * 30)
 
     @classmethod
-    def istinguishable_init(cls, existing):
+    def is_dinguishable_init(cls, existing):
         """Instantiates the class TokenStyle randomly until an instance is distinguishable from a list of other
         TokenStyles in which case that instance is then returned."""
         while True:

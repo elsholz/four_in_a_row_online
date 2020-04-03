@@ -16,6 +16,9 @@ class Game:
             not_enough_players = 'not_enough_players'
             not_all_players_ready = 'not_all_players_ready'
 
+        def __init__(self, reason: Reason):
+            self.reason = reason
+
     class InvalidPlayer(ValueError):
         """This Exception is raised, if a Player tries to join a lobby that has some other player already
          with the same name, for example."""
