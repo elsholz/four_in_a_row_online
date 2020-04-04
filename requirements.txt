@@ -1,3 +1,4 @@
-slugify
+werkzeug
 flask
 loguru
+python-slugify
