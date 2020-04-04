@@ -80,6 +80,9 @@ class CardDeck(CardDeckData, DataContainer):
     def place_card(card: cards.Card, *args, **kwargs):
         card.play(*args, **kwargs)
 
+    def json(self):
+        pass
+
 
 @dataclass
 class RulesData:
@@ -139,6 +142,9 @@ class Rules(RulesData, DataContainer):
         if obj.variable_player_count:
             obj.number_of_players = None
         return obj
+
+    def json(self):
+        pass
 
 
 @dataclass
@@ -205,6 +211,9 @@ class TokenStyle(TokenStyleData, DataContainer):
         the `is` operator."""
         return not TokenStyle.distinguishable(self, other)
 
+    def json(self):
+        pass
+
 
 class PlayerData:
     """Offering default and randomization values and functions for player class initialization."""
@@ -251,6 +260,9 @@ class Player(PlayerData, DataContainer):
             # check that no object is equal to the random object
             if all([(not x == random_object) and (not x.token_style == random_object.token_style) for x in existing]):
                 return random_object
+
+    def json(self):
+        pass
 
 
 @dataclass
@@ -375,6 +387,9 @@ class PlayField:
         # print(joint)
         return joint.join(res)
 
+    def json(self):
+        pass
+
 
 @dataclass
 class Field:
@@ -386,3 +401,6 @@ class Field:
     def __init__(self, location):
         self.occupation = None
         self.location = location
+
+    def json(self):
+        pass

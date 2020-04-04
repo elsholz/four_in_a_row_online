@@ -1,9 +1,23 @@
 from enum import Enum
 from game_logic.data import PlayField, TokenStyle
 from slugify import slugify
+import json as JSON
 
 
 class Game:
+    def json(self):
+        return {self.slug: {
+            "name": self.name,
+            "rules": JSON.dumps(self.rules),
+            "host": JSON.dumps(self.host),
+            "participants": JSON.dumps(self.participants),
+            "play_field": self._play_field.json(),
+            "game_state": self._game_state,
+            "current_turn": self.current_turn,
+            "card_deck": self.card_deck.json(),
+            "initial_players": [x.json() for x in self.initial_players],
+        }}
+
     class State(Enum):
         lobby = 0
         started = 1
