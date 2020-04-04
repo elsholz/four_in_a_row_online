@@ -4,6 +4,7 @@ from data import cards
 from tools import flatten
 from collections import namedtuple
 
+
 class DataContainer:
     """Super class for all objects that can be initialized randomly or have a default. Basically just a tool to make
     testing a bit easier, since objects can be randomly generated."""
@@ -250,6 +251,7 @@ class Player(PlayerData, DataContainer):
             # check that no object is equal to the random object
             if all([(not x == random_object) and (not x.token_style == random_object.token_style) for x in existing]):
                 return random_object
+
 
 @dataclass
 class PlayField:

@@ -10,62 +10,66 @@ place_token
 place_card
 start_game
 quit_game
-
-
 """
 from flask import json as JSON
 from flask import Flask, render_template
 from flask_socketio import SocketIO, emit
-
-app = Flask(__name__)
-# app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app)
-
-
-@app.route('/')
-def index():
-    return ('index.html 123')
+import os
+import pathlib
+from base64 import b64encode
+from loguru import logger
 
 
-@socketio.on('my event')
-def test_message(message):
-    emit('my response', {'data': 'got it!'})
+class GameSocket:
+    def __init__(self, game):
+        self.game = game
+
+        @RequestHandler.socketio.on("connect", namespace=self.game.slug)
+        def handle_player_join(json):
+            pass
+
+        @RequestHandler.socketio.on("disconnect", namespace=self.game.slug)
+        def handle_player_leave(json):
+            pass
 
 
-for x in range(10):
-    @socketio.on(str(x))
-    def test_function(json):
-        emit(f'{x} response', {'success': True})
+class RequestHandler:
+    app = Flask(__name__)
+    SECRET_FILE_PATH = pathlib.Path.home() / pathlib.Path('.config/fiaro/secret.txt')
+    if not os.path.exists(SECRET_FILE_PATH):
+        try:
+            pathlib.Path.mkdir(pathlib.Path(SECRET_FILE_PATH).parents[0], parents=True)
+        except FileExistsError:
+            pass
+        with open(SECRET_FILE_PATH, 'w') as secret_file:
+            print("Creating secret key")
+            secret_file.write(b64encode(os.urandom(2 ** 5)).decode())
+    with open(SECRET_FILE_PATH) as secret_file:
+        app.config['SECRET_KEY'] = secret_file.read()
 
+    socketio = SocketIO(app)
+    # map slugs to GameConnection objects
+    game_connections = {}
 
-# what sockets are needed for: everything where players are connected to one namespace, which is one game
-# what normal app routes are used for: everything that only applies to on player
+    @app.route('/games', methods=["GET"])
+    def list_games():
+        logger.debug("GET request to /games. Serving list of games…")
+        return JSON.dumps([])
 
-def create_game_interface(game_name):
-    @socketio.on(f"game_{game_name}")
-    def handle_data(json):
-        """Endpoint for all data input and data output by players and to players."""
-        json = {
-            'request_type': ['join_game']
-        }
+    @app.route('/games/<slug>', methods=["GET"])
+    def retrieve_game():
+        logger.debug("GET request to /games/{slug}. Sending game info…")
+        return JSON.dumps([])
 
-        return JSON.dump(json)
+    @app.route('/games', methods=["POST"])
+    def create_game():
+        logger.debug("POST request to /games. Creating game…")
+        return JSON.dumps([])
+        data = request.data
+        game_name = data['game_name']
 
+        GameSocket(data)
 
-@app.route('/games', methods=["GET"])
-def list_games(request):
-    pass
-
-
-@app.route('/games/<slug>', methods=["GET"])
-def retrieve_game(slug):
-    pass
-
-
-@app.route('/games', methods=["POST"])
-def create_game(request):
-    data = request.data
-    game_name = data['game_name']
 
 if __name__ == '__main__':
-    socketio.run(app)
+    RequestHandler.socketio.run(RequestHandler.app)

@@ -1,5 +1,6 @@
 from enum import Enum
 from game_logic.data import PlayField, TokenStyle
+from slugify import slugify
 
 
 class Game:
@@ -40,6 +41,7 @@ class Game:
         self._current_turn = None
         self.card_deck = card_deck
         self.initial_players = None
+        self._slug = slugify(f"game_{self.name}")
 
     def __repr__(self):
         return str(self)
@@ -105,9 +107,13 @@ class Game:
             # if self.rules.shuffle_turn_order_on_start:
             #    random.shuffle(self.participants)
             # replaced by:
-            #self.rules.apply(game=self)
+            # self.rules.apply(game=self)
 
             self.initial_players = self.participants[:]
+
+    @property
+    def slug(self):
+        return self._slug
 
     @property
     def current_turn(self):
