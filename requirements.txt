@@ -1,1 +1,3 @@
-tuple-flatten==1.0
+slugify
+flask
+loguru
