@@ -150,17 +150,17 @@ class Rules(RulesData, DataContainer):
 @dataclass
 class TokenStyleData:
     """Holds data for randomization and default initialization of token styles."""
-    data_fields = [x.strip() for x in '''color
-                img_src'''.splitlines()]
+    data_fields = [x.strip() for x in '''color'''.splitlines()]
+    # img_src
 
     defaults = dict(zip(
         data_fields,
-        [(255, 3, 5, 255), None]
+        [(255, 3, 5, 255), ]  # None]
     ))
 
     randomization = dict(zip(
         data_fields,
-        [lambda: tuple(random.randrange(0, 255) for _ in range(3)) + (random.randrange(125, 255),)] + [lambda: None]
+        [lambda: tuple(random.randrange(0, 255) for _ in range(3)) + (random.randrange(125, 255),)]  # + [lambda: None]
     ))
 
 
@@ -177,11 +177,12 @@ class TokenStyle(TokenStyleData, DataContainer):
         """The color's values are not within the allowed range."""
 
     color: (int, int, int, int)
-    img_src: str
 
-    def __init__(self, color, img_src=None):
+    # img_src: str
+
+    def __init__(self, color):  # , img_src=None):
         self.color = color
-        self.img_src = img_src
+        # self.img_src = img_src
         if len(color) > 3:
             # assert some visibility
             if not color[-1] > 124:
