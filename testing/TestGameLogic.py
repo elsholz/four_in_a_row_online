@@ -10,13 +10,13 @@ class TestData(TestCase):
         self.assertGreater(TokenStyle.default_init().color[3], 0)
         self.assertEqual(4, len(TokenStyle.default_init().color))
         self.assertTrue(all([0 <= c <= 255 for c in TokenStyle.default_init().color]))
-        self.assertIsNone(TokenStyle.default_init().img_src)
+        # self.assertIsNone(TokenStyle.default_init().img_src)
 
         # approve explicitly specified behavior
         self.assertEqual(TokenStyle((255, 128, 64, 125)).color[3], 125)
         self.assertEqual(4, len(TokenStyle(color=(255, 255, 255, 255)).color))
         self.assertTrue(all([0 <= c <= 255 for c in TokenStyle((255, 255, 255, 255)).color]))
-        self.assertIsNone(TokenStyle((123, 123, 123, 127)).img_src)
+        # self.assertIsNone(TokenStyle((123, 123, 123, 127)).img_src)
 
         with self.assertRaises(TokenStyle.TooTransparent):
             TokenStyle((123, 123, 123, 124))
@@ -249,7 +249,7 @@ class TestGameLogic(TestCase):
         })
 
         player_host = Player(name='im the host',
-                             token_style=TokenStyle(color=(253, 3, 5), img_src=None))
+                             token_style=TokenStyle(color=(253, 3, 5), ))  # img_src=None))
         game = Game(name='test game 1', host=player_host, rules=rules, card_deck=card_deck)
 
         for a, b in zip([card_deck, rules, player_host, [player_host], 'test game 1'],
