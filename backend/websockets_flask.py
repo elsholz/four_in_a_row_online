@@ -1,13 +1,3 @@
-"""
-Custom events are:
-
-player_join
-send_chat_message
-place_token
-place_card
-start_game
-quit_game
-"""
 from flask import json as JSON
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit
@@ -23,13 +13,30 @@ from game_logic import logic, data
 class GameSocket:
     def __init__(self, game):
         self.game = game
+        self.players_by_key = {}
 
         @RequestHandler.socketio.on("connect", namespace=self.game.slug)
         def handle_player_join(json):
-            pass
+            player_key = b64encode(os.urandom(2**5))
 
         @RequestHandler.socketio.on("disconnect", namespace=self.game.slug)
         def handle_player_leave(json):
+            pass
+
+        @RequestHandler.socketio.on("chat_message", namespace=self.game.slug)
+        def handle_chat_message(json):
+            pass
+
+        @RequestHandler.socketio.on("start_game")
+        def handle_start_game(json):
+            pass
+
+        @RequestHandler.socketio.on("quit_game")
+        def handle_quit_game(json):
+            pass
+
+        @RequestHandler.socketio.on("game_action")
+        def handle_game_action(json):
             pass
 
 
