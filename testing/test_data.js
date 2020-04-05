@@ -19,21 +19,25 @@ test_game = {
         game_is_public: true,
         card_placement_cooldown: 3
     },
-    card_deck: [
-        "ShuffleTurnOrder",
-        "ReverseTurnOrder",
-        "SkipNextTurn"
-    ],
+    card_deck: {
+        "ShuffleTurnOrder": true,
+        "ReverseTurnOrder": true,
+        "SkipNextTurn": true
+    },
     player: {
-        name: "",
+        name: "TestPlayer123",
         token_style: {
             color: [
                 255,
                 255,
                 255,
                 255
-            ],
-            img_src: ""
+            ],/*
+            img: false*/
+            /*img: {
+                name: "",
+                color_variant: "default"
+            }*/
         }
     }
 }

@@ -18,6 +18,7 @@ class GameSocket:
         @RequestHandler.socketio.on("connect", namespace=self.game.slug)
         def handle_player_join(json):
             player_key = b64encode(os.urandom(2**5))
+            return json.dumps({"Welcome to": "game123"})
 
         @RequestHandler.socketio.on("disconnect", namespace=self.game.slug)
         def handle_player_leave(json):
@@ -27,15 +28,15 @@ class GameSocket:
         def handle_chat_message(json):
             pass
 
-        @RequestHandler.socketio.on("start_game")
+        @RequestHandler.socketio.on("start_game", namespace=self.game.slug)
         def handle_start_game(json):
             pass
 
-        @RequestHandler.socketio.on("quit_game")
+        @RequestHandler.socketio.on("quit_game", namespace=self.game.slug)
         def handle_quit_game(json):
             pass
 
-        @RequestHandler.socketio.on("game_action")
+        @RequestHandler.socketio.on("game_action", namespace=self.game.slug)
         def handle_game_action(json):
             pass
 
@@ -97,23 +98,49 @@ class RequestHandler:
     @staticmethod
     @app.route('/games', methods=["POST"])
     def create_game():
-        logger.debug("POST request to /games. Creating game…")
         request_data = request.json
-
+        print(request_data)
         try:
             game_name = request_data.get("game_name")
+            assert type(game_name) == str
             assert game_name not in RequestHandler.game_connections.keys()
-            rules = request_data.get("rules")
 
-            card_deck = request_data.get("card_deck")
-            host_player = request_data.get("player")
+            rules_data = request_data.get("rules")
+            assert type(rules_data) == dict
+            assert all([type(x) in [bool, str, int, float] for x in rules_data.values()])
+            rules = data.Rules(**rules_data)
 
-            new_game = logic.Game(game_name, host_player, rules, card_deck)
-            connection = GameSocket(game=new_game)
-            RequestHandler.game_connections.update({new_game.slug: connection})
-            return JSON.dumps(new_game.json())
+            card_deck_data = request_data.get("card_deck")
+            print(card_deck_data)
+            assert type(card_deck_data) == dict
+            assert all([type(x) == str for x in card_deck_data])
+            card_deck = data.CardDeck(**card_deck_data)
+
+            host_player_data = request_data.get("player")
+            assert type(host_player_data) == dict
+            player_name = host_player_data["name"]
+            assert type(player_name) == str
+            player_token_style_data = host_player_data["token_style"]
+            assert type(player_token_style_data) == dict
+            token_style_color = player_token_style_data["color"]
+            assert type(token_style_color) == list
+            assert len(token_style_color) == 4 and [type(x) == int for x in token_style_color]
+            host_player = data.Player(player_name, data.TokenStyle(token_style_color))
+
+            if game_name and rules and card_deck and host_player:
+                new_game = logic.Game(game_name, host_player, rules, card_deck)
+                connection = GameSocket(game=new_game)
+                RequestHandler.game_connections.update({new_game.slug: connection})
+                logger.debug(f"POST request to /games successful. Created new Game \"{new_game.slug}\"")
+                return JSON.dumps(new_game.json())
+            else:
+                raise KeyError()
         except KeyError as e:
+            logger.debug("POST request to /games failed. Data incomplete.")
             return exceptions.BadRequest(f"Data incomplete, Key Error: {e.args}")
+        except Exception as e:
+            logger.debug("POST request to /games failed with unhandled Error.")
+            raise e
 
 
 if __name__ == '__main__':
