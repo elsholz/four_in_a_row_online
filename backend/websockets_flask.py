@@ -8,36 +8,45 @@ from loguru import logger
 from werkzeug import exceptions
 from slugify import slugify
 from game_logic import logic, data
+import jsonschema
+from backend.schema import create_game_schema
 
 
 class GameSocket:
     def __init__(self, game):
+        print("Creating socket for:", game.slug, game)
         self.game = game
         self.players_by_key = {}
 
-        @RequestHandler.socketio.on("connect", namespace=self.game.slug)
-        def handle_player_join(json):
-            player_key = b64encode(os.urandom(2**5))
-            return json.dumps({"Welcome to": "game123"})
+        @RequestHandler.socketio.on("connect", namespace="/" + self.game.slug)
+        def handle_player_join(json=None):
+            player_key = b64encode(os.urandom(2 ** 5))
+            logger.debug(f"A player has tried to connect to game {self.game.slug}")
+            return JSON.dumps({"Welcome to": "game123"})
 
-        @RequestHandler.socketio.on("disconnect", namespace=self.game.slug)
-        def handle_player_leave(json):
+        @RequestHandler.socketio.on("disconnect", namespace="/" + self.game.slug)
+        def handle_player_leave(json=None):
+            logger.debug(f"A player has tried to disconnect from game {self.game.slug}")
             pass
 
-        @RequestHandler.socketio.on("chat_message", namespace=self.game.slug)
-        def handle_chat_message(json):
+        @RequestHandler.socketio.on("chat_message", namespace="/" + self.game.slug)
+        def handle_chat_message(json=None):
+            logger.debug(f"A player has tried to send a chat message to game {self.game.slug}")
             pass
 
-        @RequestHandler.socketio.on("start_game", namespace=self.game.slug)
-        def handle_start_game(json):
+        @RequestHandler.socketio.on("start_game", namespace="/" + self.game.slug)
+        def handle_start_game(json=None):
+            logger.debug(f"A player has tried to start the game {self.game.slug}")
             pass
 
-        @RequestHandler.socketio.on("quit_game", namespace=self.game.slug)
-        def handle_quit_game(json):
+        @RequestHandler.socketio.on("quit_game", namespace="/" + self.game.slug)
+        def handle_quit_game(json=None):
+            logger.debug(f"A player has tried to quit the game {self.game.slug}")
             pass
 
-        @RequestHandler.socketio.on("game_action", namespace=self.game.slug)
-        def handle_game_action(json):
+        @RequestHandler.socketio.on("game_action", namespace="/" + self.game.slug)
+        def handle_game_action(json=None):
+            logger.debug(f"A player has tried to make a game action in game {self.game.slug}")
             pass
 
 
@@ -101,31 +110,19 @@ class RequestHandler:
         request_data = request.json
         print(request_data)
         try:
+            jsonschema.validate(instance=request_data, schema=create_game_schema)
             game_name = request_data.get("game_name")
-            assert type(game_name) == str
             assert game_name not in RequestHandler.game_connections.keys()
 
-            rules_data = request_data.get("rules")
-            assert type(rules_data) == dict
-            assert all([type(x) in [bool, str, int, float] for x in rules_data.values()])
-            rules = data.Rules(**rules_data)
-
-            card_deck_data = request_data.get("card_deck")
-            print(card_deck_data)
-            assert type(card_deck_data) == dict
-            assert all([type(x) == str for x in card_deck_data])
-            card_deck = data.CardDeck(**card_deck_data)
-
+            print(request_data.get("rules"))
+            rules = data.Rules(**request_data.get("rules"))
+            card_deck = data.CardDeck(**request_data.get("card_deck"))
             host_player_data = request_data.get("player")
-            assert type(host_player_data) == dict
-            player_name = host_player_data["name"]
-            assert type(player_name) == str
-            player_token_style_data = host_player_data["token_style"]
-            assert type(player_token_style_data) == dict
-            token_style_color = player_token_style_data["color"]
-            assert type(token_style_color) == list
-            assert len(token_style_color) == 4 and [type(x) == int for x in token_style_color]
-            host_player = data.Player(player_name, data.TokenStyle(token_style_color))
+
+            host_player = data.Player(
+                host_player_data["name"],
+                data.TokenStyle(**host_player_data["token_style"])
+            )
 
             if game_name and rules and card_deck and host_player:
                 new_game = logic.Game(game_name, host_player, rules, card_deck)
@@ -135,12 +132,17 @@ class RequestHandler:
                 return JSON.dumps(new_game.json())
             else:
                 raise KeyError()
-        except KeyError as e:
+        except jsonschema.exceptions.SchemaError or KeyError as e:
             logger.debug("POST request to /games failed. Data incomplete.")
             return exceptions.BadRequest(f"Data incomplete, Key Error: {e.args}")
         except Exception as e:
             logger.debug("POST request to /games failed with unhandled Error.")
             raise e
+
+    @staticmethod
+    @app.route('/test')
+    def test_js():
+        return open("../testing/test.html").read()
 
 
 if __name__ == '__main__':
