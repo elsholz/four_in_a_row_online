@@ -39,6 +39,9 @@ class DataContainer:
                f'{", ".join([k + "=" + str(v) for k, v in self.__dict__.items()])}' \
                + ')'
 
+    def json(self):
+        return {x: self.__dict__.get(x) for x in self.data_fields}
+
 
 @dataclass
 class CardDeckData:
@@ -79,9 +82,6 @@ class CardDeck(CardDeckData, DataContainer):
     @staticmethod
     def place_card(card: cards.Card, *args, **kwargs):
         card.play(*args, **kwargs)
-
-    def json(self):
-        pass
 
 
 @dataclass
@@ -142,9 +142,6 @@ class Rules(RulesData, DataContainer):
         if obj.variable_player_count:
             obj.number_of_players = None
         return obj
-
-    def json(self):
-        pass
 
 
 @dataclass
@@ -212,9 +209,6 @@ class TokenStyle(TokenStyleData, DataContainer):
         the `is` operator."""
         return not TokenStyle.distinguishable(self, other)
 
-    def json(self):
-        pass
-
 
 class PlayerData:
     """Offering default and randomization values and functions for player class initialization."""
@@ -261,9 +255,6 @@ class Player(PlayerData, DataContainer):
             # check that no object is equal to the random object
             if all([(not x == random_object) and (not x.token_style == random_object.token_style) for x in existing]):
                 return random_object
-
-    def json(self):
-        pass
 
 
 @dataclass
@@ -389,7 +380,12 @@ class PlayField:
         return joint.join(res)
 
     def json(self):
-        pass
+        return {
+            "dimensions": self.dimensions,
+            "fields": [
+                [f.json() for f in row] for row in self.fields
+            ]
+        }
 
 
 @dataclass
@@ -404,4 +400,7 @@ class Field:
         self.location = location
 
     def json(self):
-        pass
+        return {
+            "occupation": self.occupation,
+            "location": self.location
+        }

@@ -8,21 +8,21 @@ class Game:
     def json(self):
         return {self.slug: {
             "name": self.name,
-            "rules": JSON.dumps(self.rules),
-            "host": JSON.dumps(self.host),
-            "participants": JSON.dumps(self.participants),
+            "rules": self.rules.json(),
+            "host": self.host.json(),
+            "participants": [x.json() for x in self.participants],
             "play_field": self._play_field.json(),
-            "game_state": self._game_state,
+            "game_state": str(self._game_state),
             "current_turn": self.current_turn,
             "card_deck": self.card_deck.json(),
-            "initial_players": [x.json() for x in self.initial_players],
+            "initial_players": [x.json() for x in self.initial_players or []],
         }}
 
     class State(Enum):
-        lobby = 0
-        started = 1
-        finished = 2
-        quit = 3
+        lobby = "LOBBY"
+        started = "STARTED"
+        finished = "FINISHED"
+        quit = "QUIT"
 
     class CannotBeStarted(RuntimeError):
         """Exception so signalize that the game cannot be started, for example if there are not enough players."""

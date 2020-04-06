@@ -1,3 +1,4 @@
+jsonschema
 werkzeug
 flask
 loguru
