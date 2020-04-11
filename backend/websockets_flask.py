@@ -10,11 +10,18 @@ from slugify import slugify
 from game_logic import logic, data
 import jsonschema
 from backend.schema import create_game_schema
+from time import sleep
+import asyncio
+from threading import Thread, Lock
+from pathlib import Path
+import loguru
+import datetime
+
+logger.add(sink=Path("logs/fiaro.log"))
 
 
 class GameSocket:
-    def __init__(self, game):
-        print("Creating socket for:", game.slug, game)
+    def __init__(self, game: logic.Game):
         self.game = game
         self.players_by_key = {}
 
@@ -67,8 +74,9 @@ class RequestHandler:
     app.config['CORS_HEADERS'] = 'Content-Type'
 
     socketio = SocketIO(app, ping_timeout=2, ping_interval=1)
-    # map slugs to GameConnection objects
-    game_connections = {}
+    # map slugs to game socket objects
+    game_sockets = {}
+    game_sockets_lock = Lock()
 
     # for testing
     @staticmethod
@@ -96,7 +104,7 @@ class RequestHandler:
         logger.debug(f"GET request to /games/{{{slug}}}. Sending game info…")
         if slug:
             try:
-                game = RequestHandler.game_connections.get(slug)
+                game = RequestHandler.game_sockets.get(slug)
                 response = JSON.dumps(game)
             except KeyError:
                 response = exceptions.NotFound(f"Game with slug {slug} not found.")
@@ -105,16 +113,33 @@ class RequestHandler:
         return response
 
     @staticmethod
+    def manage_games():
+        while True:
+            with RequestHandler.game_sockets_lock:
+                for game_slug, sock in list(RequestHandler.game_sockets.items()):
+                    seconds_since_start = (datetime.datetime.now() - sock.game.creation_time).seconds
+                    if not sock.players_by_key and seconds_since_start > 10:
+                        # no players are connencted to the game
+                        del RequestHandler.game_sockets[game_slug]
+                        logger.debug(
+                            f"Deleted: Game {game_slug} has no players connected to it,"
+                            f" so it got deleted. Was active for {seconds_since_start}s.")
+
+                    else:
+                        logger.debug(
+                            f"Active: Game {game_slug} has {len(sock.players_by_key)} "
+                            f"players in it, {seconds_since_start}s since start.")
+            sleep(10)
+
+    @staticmethod
     @app.route('/games', methods=["POST"])
     def create_game():
         request_data = request.json
-        print(request_data)
         try:
             jsonschema.validate(instance=request_data, schema=create_game_schema)
             game_name = request_data.get("game_name")
-            assert game_name not in RequestHandler.game_connections.keys()
 
-            print(request_data.get("rules"))
+
             rules = data.Rules(**request_data.get("rules"))
             card_deck = data.CardDeck(**request_data.get("card_deck"))
             host_player_data = request_data.get("player")
@@ -126,15 +151,22 @@ class RequestHandler:
 
             if game_name and rules and card_deck and host_player:
                 new_game = logic.Game(game_name, host_player, rules, card_deck)
-                connection = GameSocket(game=new_game)
-                RequestHandler.game_connections.update({new_game.slug: connection})
+                with RequestHandler.game_sockets_lock:
+                    if new_game.slug in RequestHandler.game_sockets:
+                        raise ValueError()
+                    connection = GameSocket(game=new_game)
+                    RequestHandler.game_sockets.update({new_game.slug: connection})
                 logger.debug(f"POST request to /games successful. Created new Game \"{new_game.slug}\"")
                 return JSON.dumps(new_game.json())
             else:
-                raise KeyError()
-        except jsonschema.exceptions.SchemaError or KeyError as e:
+                raise ValueError()
+        except jsonschema.exceptions.SchemaError as e:
             logger.debug("POST request to /games failed. Data incomplete.")
             return exceptions.BadRequest(f"Data incomplete, Key Error: {e.args}")
+        except ValueError as e:
+            logger.debug("POST request to /games failed. Invalid Data.")
+            return exceptions.BadRequest(f"Data invalid. {e.args}")
+
         except Exception as e:
             logger.debug("POST request to /games failed with unhandled Error.")
             raise e
@@ -146,4 +178,6 @@ class RequestHandler:
 
 
 if __name__ == '__main__':
+    game_manager = Thread(target=RequestHandler.manage_games)
+    game_manager.start()
     RequestHandler.socketio.run(RequestHandler.app)
