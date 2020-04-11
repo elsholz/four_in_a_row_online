@@ -2,6 +2,7 @@ from enum import Enum
 from game_logic.data import PlayField, TokenStyle
 from slugify import slugify
 import json as JSON
+import datetime
 
 
 class Game:
@@ -16,6 +17,7 @@ class Game:
             "current_turn": self.current_turn,
             "card_deck": self.card_deck.json(),
             "initial_players": [x.json() for x in self.initial_players or []],
+            "creation_time": self.creation_time
         }}
 
     class State(Enum):
@@ -56,6 +58,7 @@ class Game:
         self.card_deck = card_deck
         self.initial_players = None
         self._slug = slugify(f"game_{self.name}")
+        self.creation_time = datetime.datetime.now()
 
     def __repr__(self):
         return str(self)
