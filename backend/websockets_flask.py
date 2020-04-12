@@ -4,7 +4,6 @@ from flask_socketio import SocketIO, emit
 import os
 import pathlib
 from base64 import b64encode
-from loguru import logger
 from werkzeug import exceptions
 from slugify import slugify
 from game_logic import logic, data
@@ -14,10 +13,8 @@ from time import sleep
 import asyncio
 from threading import Thread, Lock
 from pathlib import Path
-import loguru
 import datetime
-
-logger.add(sink=Path("logs/fiaro.log"))
+from loggers.loggers import games_logger, requests_logger, stats_logger
 
 
 class GameSocket:
@@ -28,32 +25,32 @@ class GameSocket:
         @RequestHandler.socketio.on("connect", namespace="/" + self.game.slug)
         def handle_player_join(json=None):
             player_key = b64encode(os.urandom(2 ** 5))
-            logger.debug(f"A player has tried to connect to game {self.game.slug}")
+            requests_logger.debug(f"A player has tried to connect to game {self.game.slug}")
             return JSON.dumps({"Welcome to": "game123"})
 
         @RequestHandler.socketio.on("disconnect", namespace="/" + self.game.slug)
         def handle_player_leave(json=None):
-            logger.debug(f"A player has tried to disconnect from game {self.game.slug}")
+            requests_logger.debug(f"A player has tried to disconnect from game {self.game.slug}")
             pass
 
         @RequestHandler.socketio.on("chat_message", namespace="/" + self.game.slug)
         def handle_chat_message(json=None):
-            logger.debug(f"A player has tried to send a chat message to game {self.game.slug}")
+            requests_logger.debug(f"A player has tried to send a chat message to game {self.game.slug}")
             pass
 
         @RequestHandler.socketio.on("start_game", namespace="/" + self.game.slug)
         def handle_start_game(json=None):
-            logger.debug(f"A player has tried to start the game {self.game.slug}")
+            requests_logger.debug(f"A player has tried to start the game {self.game.slug}")
             pass
 
         @RequestHandler.socketio.on("quit_game", namespace="/" + self.game.slug)
         def handle_quit_game(json=None):
-            logger.debug(f"A player has tried to quit the game {self.game.slug}")
+            requests_logger.debug(f"A player has tried to quit the game {self.game.slug}")
             pass
 
         @RequestHandler.socketio.on("game_action", namespace="/" + self.game.slug)
         def handle_game_action(json=None):
-            logger.debug(f"A player has tried to make a game action in game {self.game.slug}")
+            requests_logger.debug(f"A player has tried to make a game action in game {self.game.slug}")
             pass
 
 
@@ -82,18 +79,18 @@ class RequestHandler:
     @staticmethod
     @socketio.on("connect")
     def handle_connect():
-        logger.debug("A socket.io connection has been established.")
+        requests_logger.debug("A socket.io connection has been established.")
 
     # for testing
     @staticmethod
     @socketio.on("disconnect")
     def handle_disconnect():
-        logger.debug("A socket.io client has been disconnected.")
+        requests_logger.debug("A socket.io client has been disconnected.")
 
     @staticmethod
     @app.route('/games', methods=["GET"])
     def list_games():
-        logger.debug("GET request to /games. Serving list of games…")
+        requests_logger.debug("GET request to /games. Serving list of games…")
         response = JSON.dumps(list(RequestHandler.game_connections.values()))
         return response
 
@@ -101,7 +98,7 @@ class RequestHandler:
     @app.route('/games/<slug>', methods=["GET"])
     def retrieve_game(slug=None):
         slug = slugify(slug)
-        logger.debug(f"GET request to /games/{{{slug}}}. Sending game info…")
+        requests_logger.debug(f"GET request to /games/{{{slug}}}. Sending game info…")
         if slug:
             try:
                 game = RequestHandler.game_sockets.get(slug)
@@ -116,19 +113,23 @@ class RequestHandler:
     def manage_games():
         while True:
             with RequestHandler.game_sockets_lock:
+                players_sum = 0
                 for game_slug, sock in list(RequestHandler.game_sockets.items()):
                     seconds_since_start = (datetime.datetime.now() - sock.game.creation_time).seconds
-                    if not sock.players_by_key and seconds_since_start > 10:
+                    num_players = len(sock.players_by_key)
+                    players_sum += num_players
+                    if not num_players and seconds_since_start > 10:
                         # no players are connencted to the game
                         del RequestHandler.game_sockets[game_slug]
-                        logger.debug(
+                        games_logger.debug(
                             f"Deleted: Game {game_slug} has no players connected to it,"
                             f" so it got deleted. Was active for {seconds_since_start}s.")
 
                     else:
-                        logger.debug(
+                        games_logger.debug(
                             f"Active: Game {game_slug} has {len(sock.players_by_key)} "
                             f"players in it, {seconds_since_start}s since start.")
+                stats_logger.info(f"{len(RequestHandler.game_sockets)} active games with {players_sum} active players.")
             sleep(10)
 
     @staticmethod
@@ -138,7 +139,6 @@ class RequestHandler:
         try:
             jsonschema.validate(instance=request_data, schema=create_game_schema)
             game_name = request_data.get("game_name")
-
 
             rules = data.Rules(**request_data.get("rules"))
             card_deck = data.CardDeck(**request_data.get("card_deck"))
@@ -156,19 +156,19 @@ class RequestHandler:
                         raise ValueError()
                     connection = GameSocket(game=new_game)
                     RequestHandler.game_sockets.update({new_game.slug: connection})
-                logger.debug(f"POST request to /games successful. Created new Game \"{new_game.slug}\"")
+                requests_logger.debug(f"POST request to /games successful. "
+                             f"Created new Game \"{new_game.slug}\"")
                 return JSON.dumps(new_game.json())
             else:
                 raise ValueError()
         except jsonschema.exceptions.SchemaError as e:
-            logger.debug("POST request to /games failed. Data incomplete.")
+            requests_logger.debug("POST request to /games failed. Data incomplete.")
             return exceptions.BadRequest(f"Data incomplete, Key Error: {e.args}")
         except ValueError as e:
-            logger.debug("POST request to /games failed. Invalid Data.")
+            requests_logger.debug("POST request to /games failed. Invalid Data.")
             return exceptions.BadRequest(f"Data invalid. {e.args}")
-
         except Exception as e:
-            logger.debug("POST request to /games failed with unhandled Error.")
+            requests_logger.debug("POST request to /games failed with unhandled Error.")
             raise e
 
     @staticmethod
