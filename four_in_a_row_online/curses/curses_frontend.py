@@ -4,6 +4,7 @@ from game_logic.logic import *
 from game_logic.data import *
 
 
+
 def main(stdscr, players):
     stdscr.clear()
     curses.curs_set(0)

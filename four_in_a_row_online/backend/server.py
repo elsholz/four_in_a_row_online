@@ -6,13 +6,12 @@ import pathlib
 from base64 import b64encode
 from werkzeug import exceptions
 from slugify import slugify
-from game_logic import logic, data
+from ..game_logic import data
+#from game_logic import logic, data
 import jsonschema
 from backend.schema import create_game_schema
 from time import sleep
-import asyncio
 from threading import Thread, Lock
-from pathlib import Path
 import datetime
 from loggers.loggers import games_logger, requests_logger, stats_logger
 
@@ -157,7 +156,7 @@ class RequestHandler:
                     connection = GameSocket(game=new_game)
                     RequestHandler.game_sockets.update({new_game.slug: connection})
                 requests_logger.debug(f"POST request to /games successful. "
-                             f"Created new Game \"{new_game.slug}\"")
+                                      f"Created new Game \"{new_game.slug}\"")
                 return JSON.dumps(new_game.json())
             else:
                 raise ValueError()
