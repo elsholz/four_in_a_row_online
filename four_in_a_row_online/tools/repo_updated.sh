@@ -2,23 +2,23 @@
 repo="four_in_a_row_online_backend"
 if [[ -d "/home/pi/$repo" ]]
 then
-	echo "Repo Exists, fetching…"
+	echo "Repo Exists, pulling…"
 	git fetch --all
 	lst="last_commit.txt"
 	touch $lst
+	git reset --hard origin/master
+	git pull --force 
 	current=$(git show-branch master)
 	last=$(cat $lst)
 	echo "Current commit message: $current"
-	echo "Last commit message: $last"
+	echo "Previous commit message: $last"
 	if [ "$current" != "$last" ] 
 	then
-		echo "New commits found, pulling…"
+		echo "New commits have been pulled."
 		echo $current > $lst
-		git reset --hard origin/master
-		git pull --force
 		exit 0
 	else
-		echo "No changes, not pulling"
+		echo "No new commits have been found."
 		exit 1
 	fi
 else
