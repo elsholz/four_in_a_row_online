@@ -4,3 +4,4 @@ flask
 loguru
 python-slugify
 flask-socketio
+gevent
