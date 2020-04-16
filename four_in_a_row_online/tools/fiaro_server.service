@@ -1,0 +1,14 @@
+[Unit]
+Description=Keep the repository for the fiaro backend fresh and restart server automatically.
+After=network.target
+
+[Service]
+ExecStart=/home/pi/four_in_a_row_online_backend/four_in_a_row_online/tools/run_server.sh
+Restart=always
+WorkingDirectory=/home/pi/four_in_a_row_online_backend/
+User=pi
+Group=pi
+Environment=PYTHONPATH=/home/pi/four_in_a_row_online_backend/
+
+[Install]
+WantedBy=multi-user.target
