@@ -170,9 +170,9 @@ class RequestHandler:
             raise e
 
     @staticmethod
-    @app.route('/test')
+    @app.route('/')
     def test_js():
-        return open("../testing/test.html").read()
+        return open("../tests/index.html").read()
 
 
 if __name__ == '__main__':

@@ -3,8 +3,9 @@ python3 four_in_a_row_online/backend/server.py &
 server_pid=$!
 sleep 5s
 while true
-do 
-	if [ ./repo_updated.sh ] 
+do
+  	four_in_a_row_online/tools/repo_updated.sh
+	if [ $? ]
 	then
 		echo "Repo has been updated. Service will restart server (pid $server_pid)."
 		kill $server_pid

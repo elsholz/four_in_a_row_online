@@ -8,7 +8,7 @@ Restart=always
 WorkingDirectory=/home/pi/four_in_a_row_online_backend/
 User=pi
 Group=pi
-Environment=PYTHONPATH=/home/pi/four_in_a_row_online_backend/
+Environment="PYTHONPATH=/home/pi/four_in_a_row_online_backend"
 
 [Install]
 WantedBy=multi-user.target
