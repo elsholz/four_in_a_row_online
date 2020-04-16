@@ -5,3 +5,4 @@ loguru
 python-slugify
 flask-socketio
 gevent
+gevent-websocket
