@@ -1,6 +1,6 @@
 #!/bin/bash
 repo="four_in_a_row_online_backend"
-if [[ -d "$repo" ]]
+if [[ -d "/home/pi/$repo" ]]
 then
 	echo "Repo Exists, fetching…"
 	git --git-dir="/home/pi/$repo/.git" fetch 
