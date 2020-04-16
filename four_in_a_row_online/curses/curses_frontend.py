@@ -1,7 +1,6 @@
 import curses
 from curses import wrapper
-from game_logic.logic import *
-from game_logic.data import *
+from four_in_a_row_online.game_logic.data import *
 
 
 

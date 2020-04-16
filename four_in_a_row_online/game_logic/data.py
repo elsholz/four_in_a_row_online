@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 import random
-from data import cards
+from four_in_a_row_online.data import cards
 from tools import flatten
-from collections import namedtuple
 
 
 class DataContainer:

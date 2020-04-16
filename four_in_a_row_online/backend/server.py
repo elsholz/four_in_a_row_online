@@ -1,19 +1,18 @@
 from flask import json as JSON
-from flask import Flask, render_template, request
-from flask_socketio import SocketIO, emit
+from flask import Flask, request
+from flask_socketio import SocketIO
 import os
 import pathlib
 from base64 import b64encode
 from werkzeug import exceptions
 from slugify import slugify
-from ..game_logic import data
-#from game_logic import logic, data
+from four_in_a_row_online.game_logic import data, logic
 import jsonschema
-from backend.schema import create_game_schema
+from four_in_a_row_online.backend.schema import create_game_schema
 from time import sleep
 from threading import Thread, Lock
 import datetime
-from loggers.loggers import games_logger, requests_logger, stats_logger
+from four_in_a_row_online.loggers.loggers import games_logger, requests_logger, stats_logger
 
 
 class GameSocket:

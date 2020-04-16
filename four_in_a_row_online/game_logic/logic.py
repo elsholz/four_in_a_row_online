@@ -1,7 +1,6 @@
 from enum import Enum
-from game_logic.data import PlayField, TokenStyle
+from four_in_a_row_online.game_logic.data import PlayField, TokenStyle
 from slugify import slugify
-import json as JSON
 import datetime
 
 
