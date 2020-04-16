@@ -14,7 +14,8 @@ then
 	echo "Previous commit message: $last"
 	if [ "$current" != "$last" ] 
 	then
-		echo "New commits have been pulled."
+		echo "New commits have been pulled. Installing requirements…"
+		sudo pip3 install -r "/home/pi/$repo/four_in_a_row_online/requirements.txt"
 		echo $current > $lst
 		exit 0
 	else
