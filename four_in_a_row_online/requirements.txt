@@ -1,0 +1,6 @@
+jsonschema
+werkzeug
+flask
+loguru
+python-slugify
+flask-socketio
