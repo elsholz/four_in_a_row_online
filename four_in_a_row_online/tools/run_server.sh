@@ -7,8 +7,6 @@ do
 	if [ ./repo_updated.sh ] 
 	then
 		echo "Repo has been updated. Service will restart server (pid $server_pid)."
-		echo "Python Path is: $PYTHONPATH"
-		echo "Path is $(pwd)"
 		kill $server_pid
 		python3 four_in_a_row_online/tools/inject_path.py four_in_a_row_online/backend/server.py &
 		server_pid=$!
