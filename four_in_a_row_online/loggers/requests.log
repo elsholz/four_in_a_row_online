@@ -1,3 +1,0 @@
-2020-04-12 10:58:22.976 | DEBUG    | __main__:create_game:159 - POST request to /games successful. Created new Game "game-my-test-game"
-2020-04-12 10:58:34.328 | DEBUG    | __main__:create_game:159 - POST request to /games successful. Created new Game "game-my-test-game"
-2020-04-12 10:58:35.201 | DEBUG    | __main__:create_game:168 - POST request to /games failed. Invalid Data.

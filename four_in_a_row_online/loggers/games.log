@@ -1,4 +1,0 @@
-2020-04-12 10:58:24.185 | DEBUG    | __main__:manage_games:130 - Active: Game game-my-test-game has 0 players in it, 1s since start.
-2020-04-12 10:58:34.188 | DEBUG    | __main__:manage_games:125 - Deleted: Game game-my-test-game has no players connected to it, so it got deleted. Was active for 11s.
-2020-04-12 10:58:44.199 | DEBUG    | __main__:manage_games:130 - Active: Game game-my-test-game has 0 players in it, 9s since start.
-2020-04-12 10:58:54.209 | DEBUG    | __main__:manage_games:125 - Deleted: Game game-my-test-game has no players connected to it, so it got deleted. Was active for 19s.
