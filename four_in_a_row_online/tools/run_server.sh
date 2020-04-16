@@ -5,7 +5,7 @@ sleep 5s
 while true
 do
   	four_in_a_row_online/tools/repo_updated.sh
-	if [ $? ]
+	if [ $? == 0 ]
 	then
 		echo "Repo has been updated. Service will restart server (pid $server_pid)."
 		kill $server_pid
