@@ -33,9 +33,9 @@ rules_schema = {
 card_deck_schema = {
     "type": "object",
     "properties": {
-        "ShuffleTurnOrder":{"type": "boolean"},
-        "ReverseTurnOrder":{"type": "boolean"},
-        "SkipNextTurn":{"type": "boolean"},
+        "ShuffleTurnOrder": {"type": "boolean"},
+        "ReverseTurnOrder": {"type": "boolean"},
+        "SkipNextTurn": {"type": "boolean"},
     }
 }
 token_style_schema = {
@@ -59,10 +59,18 @@ player_schema = {
 create_game_schema = {
     "type": "object",
     "properties": {
-        "game_name": {"type": "string"},
         "rules": rules_schema,
         "card_deck": card_deck_schema,
         "player": player_schema,
     }
 }
 
+create_lobby_schema = {
+    "type": "object",
+    "properties": {
+        "lobby_name": {"type:string"},
+        "allow_rule_voting": {"type": "boolean"},
+        "list_publicly": {"type": "boolean"},
+        "max_number_of_players": {"type": "integer"},
+    }
+}

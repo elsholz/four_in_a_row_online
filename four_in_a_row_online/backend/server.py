@@ -1,5 +1,5 @@
 from flask import json as JSON
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_socketio import SocketIO
 import os
 import pathlib
@@ -8,47 +8,53 @@ from werkzeug import exceptions
 from slugify import slugify
 from four_in_a_row_online.game_logic import data, logic
 import jsonschema
-from four_in_a_row_online.backend.schema import create_game_schema
+from four_in_a_row_online.backend.schema import create_game_schema, create_lobby_schema
 from time import sleep
 from threading import Thread, Lock
 import datetime
 from four_in_a_row_online.loggers.loggers import games_logger, requests_logger, stats_logger
 
 
-class GameSocket:
-    def __init__(self, game: logic.Game):
-        self.game = game
+class Lobby:
+    def __init__(self, lobby_name, lobby_slug, allow_rule_voting, list_publicly, max_number_of_players):
+        self.games = []
+        self.current_game = None
         self.players_by_key = {}
+        self.lobby_name = lobby_name
+        self.lobby_slug = lobby_slug
+        self.allow_rule_voting = allow_rule_voting
+        self.list_publicly = list_publicly
+        self.max_number_of_players = max_number_of_players
 
-        @RequestHandler.socketio.on("connect", namespace="/" + self.game.slug)
+        @RequestHandler.socketio.on("connect", namespace="/" + self.lobby_name)
         def handle_player_join(json=None):
             player_key = b64encode(os.urandom(2 ** 5))
-            requests_logger.debug(f"A player has tried to connect to game {self.game.slug}")
+            requests_logger.debug(f"A player has tried to connect to game {self.lobby_name}")
             return JSON.dumps({"Welcome to": "game123"})
 
-        @RequestHandler.socketio.on("disconnect", namespace="/" + self.game.slug)
+        @RequestHandler.socketio.on("disconnect", namespace="/" + self.lobby_name)
         def handle_player_leave(json=None):
-            requests_logger.debug(f"A player has tried to disconnect from game {self.game.slug}")
+            requests_logger.debug(f"A player has tried to disconnect from game {self.lobby_name}")
             pass
 
-        @RequestHandler.socketio.on("chat_message", namespace="/" + self.game.slug)
+        @RequestHandler.socketio.on("chat_message", namespace="/" + self.lobby_name)
         def handle_chat_message(json=None):
-            requests_logger.debug(f"A player has tried to send a chat message to game {self.game.slug}")
+            requests_logger.debug(f"A player has tried to send a chat message to game {self.lobby_name}")
             pass
 
-        @RequestHandler.socketio.on("start_game", namespace="/" + self.game.slug)
+        @RequestHandler.socketio.on("start_game", namespace="/" + self.lobby_name)
         def handle_start_game(json=None):
-            requests_logger.debug(f"A player has tried to start the game {self.game.slug}")
+            requests_logger.debug(f"A player has tried to start the game {self.lobby_name}")
             pass
 
-        @RequestHandler.socketio.on("quit_game", namespace="/" + self.game.slug)
+        @RequestHandler.socketio.on("quit_game", namespace="/" + self.lobby_name)
         def handle_quit_game(json=None):
-            requests_logger.debug(f"A player has tried to quit the game {self.game.slug}")
+            requests_logger.debug(f"A player has tried to quit the game {self.lobby_name}")
             pass
 
-        @RequestHandler.socketio.on("game_action", namespace="/" + self.game.slug)
+        @RequestHandler.socketio.on("game_action", namespace="/" + self.lobby_name)
         def handle_game_action(json=None):
-            requests_logger.debug(f"A player has tried to make a game action in game {self.game.slug}")
+            requests_logger.debug(f"A player has tried to make a game action in game {self.lobby_name}")
             pass
 
 
@@ -70,8 +76,8 @@ class RequestHandler:
 
     socketio = SocketIO(app, ping_timeout=2, ping_interval=1)
     # map slugs to game socket objects
-    game_sockets = {}
-    game_sockets_lock = Lock()
+    lobbies = {}
+    lobbies_lock = Lock()
 
     # for testing
     @staticmethod
@@ -89,7 +95,7 @@ class RequestHandler:
     @app.route('/games', methods=["GET"])
     def list_games():
         requests_logger.debug("GET request to /games. Serving list of games…")
-        response = JSON.dumps(list(RequestHandler.game_connections.values()))
+        response = jsonify(list(RequestHandler.lobbies.values()))
         return response
 
     @staticmethod
@@ -99,8 +105,8 @@ class RequestHandler:
         requests_logger.debug(f"GET request to /games/{{{slug}}}. Sending game info…")
         if slug:
             try:
-                game = RequestHandler.game_sockets.get(slug)
-                response = JSON.dumps(game)
+                game = RequestHandler.lobbies.get(slug)
+                response = jsonify(game)
             except KeyError:
                 response = exceptions.NotFound(f"Game with slug {slug} not found.")
         else:
@@ -108,11 +114,11 @@ class RequestHandler:
         return response
 
     @staticmethod
-    def manage_games():
+    def manage_lobbies():
         while True:
-            with RequestHandler.game_sockets_lock:
+            with RequestHandler.lobbies_lock:
                 players_sum = 0
-                for game_slug, sock in list(RequestHandler.game_sockets.items()):
+                for game_slug, sock in list(RequestHandler.lobbies.items()):
                     seconds_since_start = (datetime.datetime.now() - sock.game.creation_time).seconds
                     num_players = len(sock.players_by_key)
                     players_sum += num_players
@@ -127,8 +133,42 @@ class RequestHandler:
                         games_logger.debug(
                             f"Active: Game {game_slug} has {len(sock.players_by_key)} "
                             f"players in it, {seconds_since_start}s since start.")
-                stats_logger.info(f"{len(RequestHandler.game_sockets)} active games with {players_sum} active players.")
+                stats_logger.info(f"{len(RequestHandler.lobbies)} active games with {players_sum} active players.")
             sleep(10)
+
+    @staticmethod
+    @app.route('/lobbies', methods=["POST"])
+    def create_lobby():
+        request_data = request.json
+        try:
+            jsonschema.validate(instance=request_data, schema=create_lobby_schema)
+            lobby_name = request_data.get("lobby_name")
+            lobby_slug = slugify(request_data.get("lobby_name"))
+            allow_rule_voting = request_data.get("allow_rule_voting")
+            list_publicly = request_data.get("list_publicly")
+            max_number_of_players = request_data.get("max_number_of_players")
+
+            if all(x is not None for x in
+                   [lobby_name, lobby_slug, allow_rule_voting, list_publicly, max_number_of_players]):
+                with RequestHandler.lobbies_lock:
+                    if lobby_slug in RequestHandler.lobbies:
+                        raise ValueError("Game slug has been used already")
+                    lobby = Lobby(lobby_name, lobby_slug, allow_rule_voting, list_publicly, max_number_of_players)
+                    RequestHandler.lobbies.update({lobby_slug: lobby})
+                requests_logger.debug(f"POST request to /games successful. "
+                                      f"Created new Game \"{lobby_slug}\"")
+                return jsonify(lobby)
+            else:
+                raise ValueError()
+        except jsonschema.exceptions.SchemaError as e:
+            requests_logger.debug("POST request to /games failed. Data incomplete.")
+            return exceptions.BadRequest(f"Data incomplete, Key Error: {e.args}")
+        except ValueError as e:
+            requests_logger.debug("POST request to /games failed. Invalid Data.")
+            return exceptions.BadRequest(f"Data invalid. {e.args}")
+        except Exception as e:
+            requests_logger.debug("POST request to /games failed with unhandled Error.")
+            raise e
 
     @staticmethod
     @app.route('/games', methods=["POST"])
@@ -176,6 +216,6 @@ class RequestHandler:
 
 
 if __name__ == '__main__':
-    game_manager = Thread(target=RequestHandler.manage_games)
+    game_manager = Thread(target=RequestHandler.manage_lobbies)
     game_manager.start()
     RequestHandler.socketio.run(RequestHandler.app)

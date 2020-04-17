@@ -1,5 +1,6 @@
+var fs = require('fs');
+
 test_game = {
-    game_name: "My Test Game",
     rules: {
         shuffle_turn_order_on_start: true,
         enable_chat: true,
@@ -10,7 +11,6 @@ test_game = {
         field_has_bounds: true,
         enable_cards: false,
         enable_cheats: false,
-        number_of_players: 2,
         start_game_if_all_ready: true,
         variable_player_count: false,
         play_field_width: 7,
@@ -42,4 +42,28 @@ test_game = {
     }
 }
 
-console.log(JSON.stringify(test_game, null, 4))
+test_lobby = {
+    lobby_name: "My test game lobby",
+    allow_rule_voting: false,
+    list_publicly: true,
+    max_number_of_players: 2,
+    player_key: "asdhja67h32"
+}
+
+fs.writeFile('test_game.json', JSON.stringify(test_game, null, 4), function (err) {
+    if (err) throw err
+})
+
+fs.writeFile('test_lobby.json', JSON.stringify(test_lobby, null, 4), function (err) {
+    if (err) throw err
+})
+
+// on a post, the host player retrieves the host key that is generated on the server
+// when joining a lobby, each connection gets a connection key
+delete test_lobby["player_key"]
+
+fs.writeFile('test_lobby_post.json', JSON.stringify(test_lobby, null, 4), function (err) {
+    if (err) throw err
+})
+
+

@@ -6,3 +6,6 @@ python-slugify
 flask-socketio
 gevent
 gevent-websocket
+Flask-SQLAlchemy
+flask-migrate
+flask-cors
