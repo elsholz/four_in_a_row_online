@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>4 IN A ROW</title>
+</head>
+<body>
+<form>
+    <input type="text">
+    <button formaction="send"><h3>Create New Game</h3></button>
+</form>
+<form>
+    <input type="text">
+    <button formaction="send"><h3>Join existing Game</h3></button>
+</form>
+
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"
+        integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+<script type="text/javascript" charset="utf-8">
+    const socket = io("/game-my-test-game");
+    socket.on('connect', function () {
+        console.log("Connected!")
+        socket.emit('my event', {data: 'I\'m connected!'});
+    });
+</script>
+</body>
+</html>
