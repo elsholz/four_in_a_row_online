@@ -74,3 +74,13 @@ create_lobby_schema = {
         "max_number_of_players": {"type": "integer"},
     }
 }
+
+chat_message_schema = {
+
+}
+
+game_action_schema = {
+
+}
+
+

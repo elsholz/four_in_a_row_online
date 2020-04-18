@@ -8,7 +8,7 @@ from werkzeug import exceptions
 from slugify import slugify
 from four_in_a_row_online.game_logic import data, logic
 import jsonschema
-from four_in_a_row_online.backend.schema import create_game_schema, create_lobby_schema
+from four_in_a_row_online.backend.schema import create_game_schema, create_lobby_schema, player_schema
 from time import sleep
 from threading import Thread, Lock
 import datetime
@@ -28,34 +28,85 @@ class Lobby:
 
         @RequestHandler.socketio.on("connect", namespace="/" + self.lobby_name)
         def handle_player_join(json=None):
+            requests_logger.debug(f"A player has tried to connect to game {self.lobby_name}."
+                                  f" The connection ID is: {session['id']}")
+            if json:
+                if jsonschema.validate(json, player_schema):
+                    pass
+                else:
+                    return JSON.dumps({"Error": {
+                        "type": "schema_error",
+                        "message": "The json data provided does not match the required schema."
+                    }})
+            else:
+                return JSON.dumps({"Error": {
+                    "type": "data_missing",
+                    "message": "You need to provide json data."
+                }})
+
             player_key = b64encode(os.urandom(2 ** 5))
-            requests_logger.debug(f"A player has tried to connect to game {self.lobby_name}")
             return JSON.dumps({"Welcome to": "game123"})
 
         @RequestHandler.socketio.on("disconnect", namespace="/" + self.lobby_name)
         def handle_player_leave(json=None):
             requests_logger.debug(f"A player has tried to disconnect from game {self.lobby_name}")
+            if json:
+                if jsonschema.validate(json, player_schema):
+                    pass
+                else:
+                    return JSON.dumps({"Error": {
+                        "type": "schema_error",
+                        "message": "The json data provided does not match the required schema."
+                    }})
+            else:
+                return JSON.dumps({"Error": {
+                    "type": "data_missing",
+                    "message": "You need to provide json data."
+                }})
             pass
 
         @RequestHandler.socketio.on("chat_message", namespace="/" + self.lobby_name)
         def handle_chat_message(json=None):
+            if json:
+                if jsonschema.validate(json, player_schema):
+                    pass
+                else:
+                    return JSON.dumps({"Error": {
+                        "type": "schema_error",
+                        "message": "The json data provided does not match the required schema."
+                    }})
+            else:
+                return JSON.dumps({"Error": {
+                    "type": "data_missing",
+                    "message": "You need to provide json data."
+                }})
             requests_logger.debug(f"A player has tried to send a chat message to game {self.lobby_name}")
             pass
 
         @RequestHandler.socketio.on("start_game", namespace="/" + self.lobby_name)
         def handle_start_game(json=None):
             requests_logger.debug(f"A player has tried to start the game {self.lobby_name}")
-            pass
 
         @RequestHandler.socketio.on("quit_game", namespace="/" + self.lobby_name)
         def handle_quit_game(json=None):
             requests_logger.debug(f"A player has tried to quit the game {self.lobby_name}")
-            pass
 
         @RequestHandler.socketio.on("game_action", namespace="/" + self.lobby_name)
         def handle_game_action(json=None):
             requests_logger.debug(f"A player has tried to make a game action in game {self.lobby_name}")
-            pass
+            if json:
+                if jsonschema.validate(json, player_schema):
+                    pass
+                else:
+                    return JSON.dumps({"Error": {
+                        "type": "schema_error",
+                        "message": "The json data provided does not match the required schema."
+                    }})
+            else:
+                return JSON.dumps({"Error": {
+                    "type": "data_missing",
+                    "message": "You need to provide json data."
+                }})
 
 
 class RequestHandler:
@@ -72,10 +123,8 @@ class RequestHandler:
             secret_file.write(b64encode(os.urandom(2 ** 5)).decode())
     with open(SECRET_FILE_PATH) as secret_file:
         app.config['SECRET_KEY'] = secret_file.read()
-    app.config['CORS_HEADERS'] = 'Content-Type'
 
     socketio = SocketIO(app, ping_timeout=2, ping_interval=1)
-    # map slugs to game socket objects
     lobbies = {}
     lobbies_lock = Lock()
 
@@ -83,13 +132,16 @@ class RequestHandler:
     @staticmethod
     @socketio.on("connect")
     def handle_connect():
-        requests_logger.debug("A socket.io connection has been established.")
+        # if not session.get("connection_id", None):
+        #    session["connection_id"] = b64encode(os.urandom(32))
+        requests_logger.debug(f"A socket.io connection has been established. "
+                              f"The connection id is {['connection_id']}")
 
-    # for testing
     @staticmethod
     @socketio.on("disconnect")
     def handle_disconnect():
-        requests_logger.debug("A socket.io client has been disconnected.")
+        requests_logger.debug(f"The socket.io client with connection id {('connection_id', 0)} "
+                              f"has been disconnected.")
 
     @staticmethod
     @app.route('/games', methods=["GET"])
@@ -123,8 +175,8 @@ class RequestHandler:
                     num_players = len(sock.players_by_key)
                     players_sum += num_players
                     if not num_players and seconds_since_start > 10:
-                        # no players are connencted to the game
-                        del RequestHandler.game_sockets[game_slug]
+                        # no players are connected to the game
+                        del RequestHandler.lobbies[game_slug]
                         games_logger.debug(
                             f"Deleted: Game {game_slug} has no players connected to it,"
                             f" so it got deleted. Was active for {seconds_since_start}s.")
@@ -210,7 +262,7 @@ class RequestHandler:
             raise e
 
     @staticmethod
-    @app.route('/')
+    @app.route('/test')
     def test_js():
         return open("../tests/index.html").read()
 

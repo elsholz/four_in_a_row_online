@@ -1,5 +1,4 @@
 jsonschema
-werkzeug
 flask
 loguru
 python-slugify
@@ -9,3 +8,5 @@ gevent-websocket
 Flask-SQLAlchemy
 flask-migrate
 flask-cors
+flask-session
+werkzeug==0.16.0
