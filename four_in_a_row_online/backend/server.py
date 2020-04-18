@@ -270,4 +270,4 @@ class RequestHandler:
 if __name__ == '__main__':
     game_manager = Thread(target=RequestHandler.manage_lobbies)
     game_manager.start()
-    RequestHandler.socketio.run(RequestHandler.app)
+    RequestHandler.socketio.run(RequestHandler.app, host="192.168.178.*")
