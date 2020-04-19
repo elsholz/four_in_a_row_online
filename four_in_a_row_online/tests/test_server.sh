@@ -1,1 +1,1 @@
-curl -i localhost:5000/games -X POST -H "Content-Type: application/json" --data "@test_data.json"
+curl -i localhost:5000/lobbies -X POST -H "Content-Type: application/json" --data "@test_lobby_post.json"
