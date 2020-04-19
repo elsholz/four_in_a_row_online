@@ -8,7 +8,7 @@ from werkzeug import exceptions
 from slugify import slugify
 from four_in_a_row_online.game_logic import data, logic
 import jsonschema
-from four_in_a_row_online.backend.schema import create_game_schema, create_lobby_schema, player_schema
+from four_in_a_row_online.backend import schema
 from time import sleep
 from threading import Thread, Lock
 from flask_session import Session
@@ -37,7 +37,7 @@ class Lobby:
             requests_logger.debug(f"{session.get('connection_id', None)} connected to game {self.lobby_name} at "
                                   f"/{self.lobby_slug}.")
             if json:
-                if jsonschema.validate(json, player_schema):
+                if jsonschema.validate(json, schema.player_schema):
                     token_style_data = json["token_style"]
                     token_style = data.TokenStyle(color=tuple(token_style_data["color"]))
                     player = data.Player(json['player_name'], token_style)
@@ -54,31 +54,19 @@ class Lobby:
                     "message": "You need to provide json data."
                 }})
 
-            return JSON.dumps({"Welcome to": "game123"})
-
         @RequestHandler.socketio.on("disconnect", self.name_space)
-        def handle_player_leave(json=None):
-            requests_logger.debug(f"A player has tried to disconnect from lobby {self.lobby_name} "
+        def handle_player_leave():
+            player = self.players_by_session.get(session.get("connection_id", None), None)
+            requests_logger.debug(f"{session.get('connection_id', None)} disconnected from {self.lobby_name} "
                                   f"at /{self.lobby_slug}")
-            if json:
-                if jsonschema.validate(json, player_schema):
-                    pass
-                else:
-                    return JSON.dumps({"Error": {
-                        "type": "schema_error",
-                        "message": "The json data provided does not match the required schema."
-                    }})
-            else:
-                return JSON.dumps({"Error": {
-                    "type": "data_missing",
-                    "message": "You need to provide json data."
-                }})
-            pass
+            if player:
+                del self.players_by_session[session["connection_id"]]
 
         @RequestHandler.socketio.on("chat_message", namespace=self.name_space)
         def handle_chat_message(json=None):
+            player = self.players_by_session.get(session.get("connection_id", None), None)
             if json:
-                if jsonschema.validate(json, player_schema):
+                if jsonschema.validate(json, schema.player_schema):
                     pass
                 else:
                     return JSON.dumps({"Error": {
@@ -91,21 +79,68 @@ class Lobby:
                     "message": "You need to provide json data."
                 }})
             requests_logger.debug(f"A player has tried to send a chat message to game {self.lobby_name}")
-            pass
+
+        # TODO: endpoint for updating rules in the lobby
+        # store current rules in lobby
+        # on start game request check if game can be started and create game object if possible
+        # enable players to change their ready state
 
         @RequestHandler.socketio.on("start_game", namespace=self.name_space)
         def handle_start_game(json=None):
+            quit()
+            ############################################################################
             requests_logger.debug(f"A player has tried to start the game {self.lobby_name}")
+            player = self.players_by_session.get(session.get("connection_id", None), None)
+            if json:
+                try:
+                    jsonschema.validate(instance=json, schema=schema.create_game_schema)
+                    game_name = json.get("game_name")
+
+                    rules = data.Rules(**json.get("rules"))
+                    card_deck = data.CardDeck(**json.get("card_deck"))
+                    host_player_data = json.get("player")
+
+                    host_player = data.Player(
+                        host_player_data["name"],
+                        data.TokenStyle(**host_player_data["token_style"])
+                    )
+
+                    if game_name and rules and card_deck and host_player:
+                        new_game = logic.Game(game_name, host_player, rules, card_deck)
+                        with RequestHandler.game_sockets_lock:
+                            if new_game.slug in RequestHandler.game_sockets:
+                                raise ValueError()
+                            connection = GameSocket(game=new_game)
+                            RequestHandler.game_sockets.update({new_game.slug: connection})
+                        requests_logger.debug(f"POST request to /games successful. "
+                                              f"Created new Game \"{new_game.slug}\"")
+                        return JSON.dumps(new_game.json())
+                    else:
+                        raise ValueError()
+                except jsonschema.exceptions.SchemaError as e:
+                    requests_logger.debug("POST request to /games failed. Data incomplete.")
+                    return exceptions.BadRequest(f"Data incomplete, Key Error: {e.args}")
+                except ValueError as e:
+                    requests_logger.debug("POST request to /games failed. Invalid Data.")
+                    return exceptions.BadRequest(f"Data invalid. {e.args}")
+                except Exception as e:
+                    requests_logger.debug(f"Start game request by {session['connection_id']} to {self.name_space}"
+                                          f"failed with unhandled Error.")
+                    raise e
+            else:
+                return exceptions.BadRequest("You need to provide json data.")
 
         @RequestHandler.socketio.on("quit_game", namespace=self.name_space)
         def handle_quit_game(json=None):
             requests_logger.debug(f"A player has tried to quit the game {self.lobby_name}")
+            player = self.players_by_session.get(session.get("connection_id", None), None)
 
         @RequestHandler.socketio.on("game_action", namespace=self.name_space)
         def handle_game_action(json=None):
             requests_logger.debug(f"A player has tried to make a game action in game {self.lobby_name}")
+            player = self.players_by_session.get(session.get("connection_id", None), None)
             if json:
-                if jsonschema.validate(json, player_schema):
+                if jsonschema.validate(json, schema.game_action_schema):
                     pass
                 else:
                     return JSON.dumps({"Error": {
@@ -210,7 +245,7 @@ class RequestHandler:
     def create_lobby():
         request_data = request.json
         try:
-            jsonschema.validate(instance=request_data, schema=create_lobby_schema)
+            jsonschema.validate(instance=request_data, schema=schema.create_lobby_schema)
             lobby_name = request_data.get("lobby_name")
             lobby_slug = "lobby-" + slugify(request_data.get("lobby_name"))
             allow_rule_voting = request_data.get("allow_rule_voting")
@@ -227,45 +262,6 @@ class RequestHandler:
                 requests_logger.debug(f"POST request to /games successful. "
                                       f"Created new Game \"{lobby_slug}\"")
                 return jsonify(lobby.json())
-            else:
-                raise ValueError()
-        except jsonschema.exceptions.SchemaError as e:
-            requests_logger.debug("POST request to /games failed. Data incomplete.")
-            return exceptions.BadRequest(f"Data incomplete, Key Error: {e.args}")
-        except ValueError as e:
-            requests_logger.debug("POST request to /games failed. Invalid Data.")
-            return exceptions.BadRequest(f"Data invalid. {e.args}")
-        except Exception as e:
-            requests_logger.debug("POST request to /games failed with unhandled Error.")
-            raise e
-
-    @staticmethod
-    @app.route('/games', methods=["POST"])
-    def create_game():
-        request_data = request.json
-        try:
-            jsonschema.validate(instance=request_data, schema=create_game_schema)
-            game_name = request_data.get("game_name")
-
-            rules = data.Rules(**request_data.get("rules"))
-            card_deck = data.CardDeck(**request_data.get("card_deck"))
-            host_player_data = request_data.get("player")
-
-            host_player = data.Player(
-                host_player_data["name"],
-                data.TokenStyle(**host_player_data["token_style"])
-            )
-
-            if game_name and rules and card_deck and host_player:
-                new_game = logic.Game(game_name, host_player, rules, card_deck)
-                with RequestHandler.game_sockets_lock:
-                    if new_game.slug in RequestHandler.game_sockets:
-                        raise ValueError()
-                    connection = GameSocket(game=new_game)
-                    RequestHandler.game_sockets.update({new_game.slug: connection})
-                requests_logger.debug(f"POST request to /games successful. "
-                                      f"Created new Game \"{new_game.slug}\"")
-                return JSON.dumps(new_game.json())
             else:
                 raise ValueError()
         except jsonschema.exceptions.SchemaError as e:
