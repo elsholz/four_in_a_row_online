@@ -10,3 +10,4 @@ flask-migrate
 flask-cors
 flask-session
 werkzeug==0.16.0
+flask-session

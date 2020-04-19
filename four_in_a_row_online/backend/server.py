@@ -1,5 +1,5 @@
 from flask import json as JSON
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_socketio import SocketIO
 import os
 import pathlib
@@ -11,28 +11,38 @@ import jsonschema
 from four_in_a_row_online.backend.schema import create_game_schema, create_lobby_schema, player_schema
 from time import sleep
 from threading import Thread, Lock
+from flask_session import Session
 import datetime
 from four_in_a_row_online.loggers.loggers import games_logger, requests_logger, stats_logger
+from ast import literal_eval
 
 
 class Lobby:
     def __init__(self, lobby_name, lobby_slug, allow_rule_voting, list_publicly, max_number_of_players):
         self.games = []
         self.current_game = None
-        self.players_by_key = {}
+        self.players_by_session = {}
         self.lobby_name = lobby_name
         self.lobby_slug = lobby_slug
         self.allow_rule_voting = allow_rule_voting
         self.list_publicly = list_publicly
         self.max_number_of_players = max_number_of_players
+        self.creation_time = datetime.datetime.now()
+        self.name_space = '/' + self.lobby_slug
 
-        @RequestHandler.socketio.on("connect", namespace="/" + self.lobby_name)
+        @RequestHandler.socketio.on("connect", namespace=self.name_space)
         def handle_player_join(json=None):
-            requests_logger.debug(f"A player has tried to connect to game {self.lobby_name}."
-                                  f" The connection ID is: {session['id']}")
+            if "connection_id" not in session:
+                session["connection_id"] = b64encode(os.urandom(2 ** 5))
+            requests_logger.debug(f"{session.get('connection_id', None)} connected to game {self.lobby_name} at "
+                                  f"/{self.lobby_slug}.")
             if json:
                 if jsonschema.validate(json, player_schema):
-                    pass
+                    token_style_data = json["token_style"]
+                    token_style = data.TokenStyle(color=tuple(token_style_data["color"]))
+                    player = data.Player(json['player_name'], token_style)
+                    if not self.current_game and len(self.players_by_session) < max_number_of_players:
+                        self.players_by_session[session["connection_id"]] = player
                 else:
                     return JSON.dumps({"Error": {
                         "type": "schema_error",
@@ -44,12 +54,12 @@ class Lobby:
                     "message": "You need to provide json data."
                 }})
 
-            player_key = b64encode(os.urandom(2 ** 5))
             return JSON.dumps({"Welcome to": "game123"})
 
-        @RequestHandler.socketio.on("disconnect", namespace="/" + self.lobby_name)
+        @RequestHandler.socketio.on("disconnect", self.name_space)
         def handle_player_leave(json=None):
-            requests_logger.debug(f"A player has tried to disconnect from game {self.lobby_name}")
+            requests_logger.debug(f"A player has tried to disconnect from lobby {self.lobby_name} "
+                                  f"at /{self.lobby_slug}")
             if json:
                 if jsonschema.validate(json, player_schema):
                     pass
@@ -65,7 +75,7 @@ class Lobby:
                 }})
             pass
 
-        @RequestHandler.socketio.on("chat_message", namespace="/" + self.lobby_name)
+        @RequestHandler.socketio.on("chat_message", namespace=self.name_space)
         def handle_chat_message(json=None):
             if json:
                 if jsonschema.validate(json, player_schema):
@@ -83,15 +93,15 @@ class Lobby:
             requests_logger.debug(f"A player has tried to send a chat message to game {self.lobby_name}")
             pass
 
-        @RequestHandler.socketio.on("start_game", namespace="/" + self.lobby_name)
+        @RequestHandler.socketio.on("start_game", namespace=self.name_space)
         def handle_start_game(json=None):
             requests_logger.debug(f"A player has tried to start the game {self.lobby_name}")
 
-        @RequestHandler.socketio.on("quit_game", namespace="/" + self.lobby_name)
+        @RequestHandler.socketio.on("quit_game", namespace=self.name_space)
         def handle_quit_game(json=None):
             requests_logger.debug(f"A player has tried to quit the game {self.lobby_name}")
 
-        @RequestHandler.socketio.on("game_action", namespace="/" + self.lobby_name)
+        @RequestHandler.socketio.on("game_action", namespace=self.name_space)
         def handle_game_action(json=None):
             requests_logger.debug(f"A player has tried to make a game action in game {self.lobby_name}")
             if json:
@@ -108,11 +118,20 @@ class Lobby:
                     "message": "You need to provide json data."
                 }})
 
+    def json(self):
+        return {
+            "lobby_name": self.lobby_name,
+            "lobby_slug": self.lobby_slug,
+            "allow_rule_voting": self.allow_rule_voting,
+            "list_publicly": self.list_publicly,
+            "max_number_of_players": self.max_number_of_players,
+        }
+
 
 class RequestHandler:
     app = Flask(__name__)
-
-    SECRET_FILE_PATH = pathlib.Path.home() / pathlib.Path('.config/fiaro/secret.txt')
+    CONFIG_DIR = pathlib.Path.home() / pathlib.Path('.config/fiaro/')
+    SECRET_FILE_PATH = CONFIG_DIR / pathlib.Path('secret.txt')
     if not os.path.exists(SECRET_FILE_PATH):
         try:
             pathlib.Path.mkdir(pathlib.Path(SECRET_FILE_PATH).parents[0], parents=True)
@@ -123,25 +142,23 @@ class RequestHandler:
             secret_file.write(b64encode(os.urandom(2 ** 5)).decode())
     with open(SECRET_FILE_PATH) as secret_file:
         app.config['SECRET_KEY'] = secret_file.read()
+    Session(app)
 
-    socketio = SocketIO(app, ping_timeout=2, ping_interval=1)
+    socketio = SocketIO(app, manage_sessions=False, ping_timeout=2, ping_interval=1)
     lobbies = {}
     lobbies_lock = Lock()
 
-    # for testing
     @staticmethod
     @socketio.on("connect")
     def handle_connect():
-        # if not session.get("connection_id", None):
-        #    session["connection_id"] = b64encode(os.urandom(32))
-        requests_logger.debug(f"A socket.io connection has been established. "
-                              f"The connection id is {['connection_id']}")
+        if session.get("connection_id", None) is None:
+            session["connection_id"] = b64encode(os.urandom(2 ** 5))
+        requests_logger.debug(f"{session['connection_id']} connected.")
 
     @staticmethod
     @socketio.on("disconnect")
     def handle_disconnect():
-        requests_logger.debug(f"The socket.io client with connection id {('connection_id', 0)} "
-                              f"has been disconnected.")
+        requests_logger.debug(f"{session.get('connection_id', 0)} has been disconnected.")
 
     @staticmethod
     @app.route('/games', methods=["GET"])
@@ -171,8 +188,8 @@ class RequestHandler:
             with RequestHandler.lobbies_lock:
                 players_sum = 0
                 for game_slug, sock in list(RequestHandler.lobbies.items()):
-                    seconds_since_start = (datetime.datetime.now() - sock.game.creation_time).seconds
-                    num_players = len(sock.players_by_key)
+                    seconds_since_start = (datetime.datetime.now() - sock.creation_time).seconds
+                    num_players = len(sock.players_by_session)
                     players_sum += num_players
                     if not num_players and seconds_since_start > 10:
                         # no players are connected to the game
@@ -183,7 +200,7 @@ class RequestHandler:
 
                     else:
                         games_logger.debug(
-                            f"Active: Game {game_slug} has {len(sock.players_by_key)} "
+                            f"Active: Game {game_slug} has {len(sock.players_by_session)} "
                             f"players in it, {seconds_since_start}s since start.")
                 stats_logger.info(f"{len(RequestHandler.lobbies)} active games with {players_sum} active players.")
             sleep(10)
@@ -195,7 +212,7 @@ class RequestHandler:
         try:
             jsonschema.validate(instance=request_data, schema=create_lobby_schema)
             lobby_name = request_data.get("lobby_name")
-            lobby_slug = slugify(request_data.get("lobby_name"))
+            lobby_slug = "lobby-" + slugify(request_data.get("lobby_name"))
             allow_rule_voting = request_data.get("allow_rule_voting")
             list_publicly = request_data.get("list_publicly")
             max_number_of_players = request_data.get("max_number_of_players")
@@ -209,7 +226,7 @@ class RequestHandler:
                     RequestHandler.lobbies.update({lobby_slug: lobby})
                 requests_logger.debug(f"POST request to /games successful. "
                                       f"Created new Game \"{lobby_slug}\"")
-                return jsonify(lobby)
+                return jsonify(lobby.json())
             else:
                 raise ValueError()
         except jsonschema.exceptions.SchemaError as e:
@@ -263,11 +280,29 @@ class RequestHandler:
 
     @staticmethod
     @app.route('/test')
-    def test_js():
+    def test_root():
+        """Test socketio conncetions to root or unhandled namespaces."""
         return open("../tests/index.html").read()
+
+    @staticmethod
+    @app.route('/testgame')
+    def test_game():
+        """Test socketio connections to the lobby-my-test-lobby namespace."""
+        return open("../tests/test.html").read()
 
 
 if __name__ == '__main__':
     game_manager = Thread(target=RequestHandler.manage_lobbies)
-    game_manager.start()
-    RequestHandler.socketio.run(RequestHandler.app, host="192.168.178.*")
+    # game_manager.start()
+    CONFIG_FILE_PATH = RequestHandler.CONFIG_DIR / pathlib.Path("fiaro.conf")
+    host = None
+    if os.path.exists(CONFIG_FILE_PATH):
+        with open(CONFIG_FILE_PATH) as config_file:
+            conf = literal_eval(config_file.read())
+            if 'host' in conf:
+                host = conf["host"]
+
+    if host:
+        RequestHandler.socketio.run(RequestHandler.app, host=conf["host"])
+    else:
+        RequestHandler.socketio.run(RequestHandler.app)
