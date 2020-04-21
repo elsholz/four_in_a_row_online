@@ -15,13 +15,14 @@ from flask_session import Session
 import datetime
 from four_in_a_row_online.loggers.loggers import games_logger, requests_logger, stats_logger
 from ast import literal_eval
+from collections import OrderedDict
 
 
 class Lobby:
     def __init__(self, lobby_name, lobby_slug, allow_rule_voting, list_publicly, max_number_of_players):
         self.games = []
         self.current_game = None
-        self.players_by_session = {}
+        self.players_by_session = OrderedDict()
         self.lobby_name = lobby_name
         self.lobby_slug = lobby_slug
         self.allow_rule_voting = allow_rule_voting
@@ -30,12 +31,17 @@ class Lobby:
         self.creation_time = datetime.datetime.now()
         self.name_space = '/' + self.lobby_slug
 
+        self.next_rules = data.Rules.default_init()
+        self.next_card_deck = data.CardDeck.default_init()
+
         @RequestHandler.socketio.on("connect", namespace=self.name_space)
         def handle_player_join(json=None):
             if "connection_id" not in session:
                 session["connection_id"] = b64encode(os.urandom(2 ** 5))
-            requests_logger.debug(f"{session.get('connection_id', None)} connected to game {self.lobby_name} at "
-                                  f"/{self.lobby_slug}.")
+            requests_logger.debug(
+                f"{session.get('connection_id', None)} connected to game {self.lobby_name} at /{self.lobby_slug}."
+            )
+
             if json:
                 if jsonschema.validate(json, schema.player_schema):
                     token_style_data = json["token_style"]
@@ -43,6 +49,28 @@ class Lobby:
                     player = data.Player(json['player_name'], token_style)
                     if not self.current_game and len(self.players_by_session) < max_number_of_players:
                         self.players_by_session[session["connection_id"]] = player
+
+
+                    ########
+                    def player_join(self, p):
+                        if self._game_state == logic.Game.State.started:
+                            if not self.rules.allow_reconnect:
+                                raise logic.Game.InvalidPlayer()
+                            else:
+                                if p not in self.participants:
+                                    if not any(p.name == x.name for x in self.initial_players):
+                                        self.participants.append(p)
+                        else:
+                            if any([
+                                not data.TokenStyle.distinguishable(x.token_style, p.token_style)
+                                for x in self.participants
+                            ]) or any([p.name == x.name for x in self.participants]):
+                                raise logic.Game.InvalidPlayer()
+
+                            if not len(self.participants) < self.rules.number_of_players:
+                                raise logic.Game.LobbyFull(len(self.participants))
+
+                        self.participants.append(p)
                 else:
                     return JSON.dumps({"Error": {
                         "type": "schema_error",
@@ -61,6 +89,26 @@ class Lobby:
                                   f"at /{self.lobby_slug}")
             if player:
                 del self.players_by_session[session["connection_id"]]
+
+                ####################
+                def player_leave(self, p):
+                    # NOTE: Backend will only make one copy per player for certain (except for reconnects)
+                    if p in self.participants:
+                        print('before:', self.participants)
+                        self.participants.remove(p)
+                        print('after:', self.participants)
+                    else:
+                        raise logic.Game.InvalidPlayer
+
+                    if len(self.participants) == 0:
+                        self.quit_game()
+
+                    elif p == self.host:
+                        self.host = self.participants[0]
+
+                    if self.rules.finish_game_on_disconnect:
+                        self.finish_game()
+                        # self._game_state = GameState.lobby
 
         @RequestHandler.socketio.on("chat_message", namespace=self.name_space)
         def handle_chat_message(json=None):
@@ -85,12 +133,102 @@ class Lobby:
         # on start game request check if game can be started and create game object if possible
         # enable players to change their ready state
 
+        @RequestHandler.socketio.on("vote_rules")
+        def vote_on_rules(json=None):
+            player = self.players_by_session.get(session.get("connection_id", None), None)
+            if player:
+                requests_logger.debug(f'Player {player} is trying to vote on rules on {self.name_space}')
+                if json:
+                    if jsonschema.validate(json, schema.game_action_schema):
+                        pass
+                    else:
+                        return jsonify({"Error": {
+                            "type": "schema_error",
+                            "message": "The json data provided does not match the required schema.",
+                        }})
+                else:
+                    return jsonify({"Error": {
+                        "type": "data_missing",
+                        "message": "You need to provide json data.",
+                    }})
+            else:
+                requests_logger.debug(f'A foreign connection has tried to vote on rules on {self.name_space}')
+
         @RequestHandler.socketio.on("start_game", namespace=self.name_space)
         def handle_start_game(json=None):
-            quit()
-            ############################################################################
             requests_logger.debug(f"A player has tried to start the game {self.lobby_name}")
             player = self.players_by_session.get(session.get("connection_id", None), None)
+            if player:
+                requests_logger.debug(f'Player {player} is trying to start {self.name_space}')
+
+                # no data is needed as the rules for a new game are stored in the lobby object
+                def start_game(self, host_decision=False):
+                    def game_can_be_started(_host_decision):
+                        """Decide if the game can be started. Otherwise raise an exception stating the reason for the failure
+                        to be handled by the backend."""
+                        if self.rules.start_game_if_all_ready:
+                            # Case 1: All Players are ready
+                            if all(p.is_ready for p in self.participants):
+                                # Case 1.1: Number of players variable
+                                if self.rules.variable_player_count:
+                                    # Case 1.1.1: Enough Players in Lobby → start game
+                                    if len(self.participants) > 1:
+                                        return True
+                                    # Case 1.1.2: Not enough players for a game → Game cannot be started
+                                    else:
+                                        raise logic.Game.CannotBeStarted(
+                                            logic.Game.CannotBeStarted.Reason.not_enough_players)
+
+                                # Case 1.2: Number of Players fixed
+                                else:
+                                    # Case 1.2.1: Lobby is full → start game
+                                    if len(self.participants) == self.rules.number_of_players:
+                                        return True
+                                    # Case 1.2.2: Not enough players → Game cannot be started
+                                    else:
+                                        # Case 1.2.2.1: Host decided for the game to start → start game
+                                        if _host_decision:
+                                            return True
+                                        # Case 1.2.2.2: No host decision → Game cannot be started
+                                        else:
+                                            raise logic.Game.CannotBeStarted(
+                                                logic.Game.CannotBeStarted.Reason.not_enough_players)
+
+                            # Case 2: Not all players are ready → Game cannot be started
+                            else:
+                                raise logic.Game.CannotBeStarted(
+                                    logic.Game.CannotBeStarted.Reason.not_all_players_ready)
+
+                        else:
+                            # Case 1: Lobby full → start game
+                            if len(self.participants) == self.rules.number_of_players:
+                                return True
+
+                            # Case 2: Lobby not full (Host initiated start)
+                            else:
+                                # Case 2.1: Enough players → start game
+                                if len(self.participants) > 1:
+                                    return True
+                                # Case 2.2: Not enough players → Game cannot be started
+                                else:
+                                    raise logic.Game.CannotBeStarted(
+                                        logic.Game.CannotBeStarted.Reason.not_enough_players)
+
+                    if game_can_be_started(host_decision):
+                        self._game_state = logic.Game.State.started
+                        self._current_turn = 0
+
+                        # if self.rules.shuffle_turn_order_on_start:
+                        #    random.shuffle(self.participants)
+                        # replaced by:
+                        # self.rules.apply(game=self)
+
+                        self.initial_players = self.participants[:]
+            else:
+                requests_logger.debug(f'A foreign connection has tried to start {self.name_space}')
+            quit()
+            ############################################################################
+
             if json:
                 try:
                     jsonschema.validate(instance=json, schema=schema.create_game_schema)
@@ -134,23 +272,35 @@ class Lobby:
         def handle_quit_game(json=None):
             requests_logger.debug(f"A player has tried to quit the game {self.lobby_name}")
             player = self.players_by_session.get(session.get("connection_id", None), None)
+            if player:
+                requests_logger.debug(f'Player {player} is trying to quit {self.name_space}')
+            else:
+                requests_logger.debug(f'A foreign connection has tried to quit {self.name_space}')
 
         @RequestHandler.socketio.on("game_action", namespace=self.name_space)
         def handle_game_action(json=None):
             requests_logger.debug(f"A player has tried to make a game action in game {self.lobby_name}")
             player = self.players_by_session.get(session.get("connection_id", None), None)
-            if json:
-                if jsonschema.validate(json, schema.game_action_schema):
-                    pass
+            if player:
+                requests_logger.debug(f'Player {player} is trying to commit a game action on {self.name_space}')
+                if json:
+                    if jsonschema.validate(json, schema.game_action_schema):
+                        pass
+                    else:
+                        return jsonify({"Error": {
+                            "type": "schema_error",
+                            "message": "The json data provided does not match the required schema.",
+                        }})
                 else:
-                    return JSON.dumps({"Error": {
-                        "type": "schema_error",
-                        "message": "The json data provided does not match the required schema."
+                    return jsonify({"Error": {
+                        "type": "data_missing",
+                        "message": "You need to provide json data.",
                     }})
             else:
-                return JSON.dumps({"Error": {
-                    "type": "data_missing",
-                    "message": "You need to provide json data."
+                requests_logger.debug(f'A foreign connection has tried to commit a game action on {self.name_space}')
+                return jsonify({"Error": {
+                    "type": "insufficient_authorization",
+                    "message": "you are not a player an hence not allowed to commit a game action.",
                 }})
 
     def json(self):
@@ -188,7 +338,7 @@ class RequestHandler:
     def handle_connect():
         if session.get("connection_id", None) is None:
             session["connection_id"] = b64encode(os.urandom(2 ** 5))
-        requests_logger.debug(f"{session['connection_id']} connected.")
+        requests_logger.debug(f"{session['connection_id']} connected. The sid is: {request.sid}, request: {request}")
 
     @staticmethod
     @socketio.on("disconnect")
