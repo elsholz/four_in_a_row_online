@@ -11,7 +11,6 @@ rules_schema = {
     type_: "object",
     "properties": {
         "shuffle_turn_order_on_start": {type_: boolean},
-        "enable_chat": {type_: boolean},
         "finish_game_on_disconnect": {type_: boolean},
         "finish_game_on_win": {type_: boolean},
         "allow_reconnect": {type_: boolean},
@@ -19,13 +18,9 @@ rules_schema = {
         "field_has_bounds": {type_: boolean},
         "enable_cards": {type_: boolean},
         "enable_cheats": {type_: boolean},
-        "number_of_players": {type_: integer},
-        "start_game_if_all_ready": {type_: boolean},
-        "variable_player_count": {type_: boolean},
         "play_field_width": {type_: integer},
         "play_field_height": {type_: integer},
         "enable_gravity": {type_: boolean},
-        "game_is_public": {type_: boolean},
         "card_placement_cooldown": {type_: integer},
     }
 }
@@ -42,9 +37,10 @@ card_deck_schema = {
 token_style_schema = {
     type_: "object",
     "properties": {
-        # TODO: Check if array of numbers
         "color": {
             type_: "array",
+            "minItems": 4,
+            "maxItems": 4,
             "items": {type_: integer}
         }
     }
@@ -58,12 +54,17 @@ player_schema = {
     }
 }
 
-create_game_schema = {
+change_rules_schema = {
     type_: "object",
     "properties": {
-        "rules": rules_schema,
-        "card_deck": card_deck_schema,
-        "player": player_schema,
+        "rules": rules_schema
+    }
+}
+
+change_card_deck_schema = {
+    type_: "object",
+    "properties": {
+        "card_deck": card_deck_schema
     }
 }
 
@@ -74,6 +75,9 @@ create_lobby_schema = {
         "allow_rule_voting": {type_: boolean},
         "list_publicly": {type_: boolean},
         "max_number_of_players": {type_: integer},
+        "enable_chat": {type_: boolean},
+        "start_game_if_all_ready": {type_: boolean},
+        "variable_player_count": {type_: boolean},
     }
 }
 
